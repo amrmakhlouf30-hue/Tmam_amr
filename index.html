@@ -1,0 +1,5384 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>نظام التمام المتكامل - تحليل البيانات المتقدم</title>
+
+<!-- Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+/* الأنماط الأساسية */
+:root{
+  --primary:#0078ff; 
+  --primary-light:#4aa0ff;
+  --primary-dark:#0056cc;
+  --bg:#f7f9fb; 
+  --card:#fff; 
+  --text:#213547; 
+  --font:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --muted:#6b7a86;
+  --success:#28a745;
+  --warning:#ffc107;
+  --danger:#dc3545;
+  --border:#e6eef8;
+  --shadow:0 6px 20px rgba(0,0,0,0.08);
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+body{ 
+  font-family:var(--font); 
+  background:linear-gradient(180deg,var(--bg),#eef2f5); 
+  color:var(--text); 
+  text-align:center; 
+  margin:0; 
+  padding:18px;
+  line-height:1.6;
+}
+
+.header{ 
+  max-width:1100px; 
+  margin:6px auto 18px; 
+  text-align:center;
+  padding:10px;
+}
+
+.title{ 
+  font-size:24px; 
+  font-weight:700; 
+  color:var(--text); 
+  margin-bottom:6px;
+  position:relative;
+  display:inline-block;
+}
+
+.title:after {
+  content:'';
+  position:absolute;
+  bottom:-5px;
+  right:0;
+  width:100%;
+  height:3px;
+  background:linear-gradient(90deg, var(--primary), var(--primary-light));
+  border-radius:2px;
+}
+
+.muted{ color:var(--muted); font-size:14px; margin-top:8px;}
+.card{ 
+  background:var(--card); 
+  padding:20px; 
+  border-radius:12px; 
+  box-shadow:var(--shadow); 
+  width:92%; 
+  max-width:1100px; 
+  margin:12px auto;
+  transition:transform 0.3s, box-shadow 0.3s;
+}
+
+.card:hover {
+  transform:translateY(-3px);
+  box-shadow:0 8px 25px rgba(0,0,0,0.12);
+}
+
+.controls{ 
+  display:flex; 
+  gap:10px; 
+  flex-wrap:wrap; 
+  justify-content:center; 
+  align-items:center;
+  margin:15px 0;
+}
+
+input[type="file"]{ display:none; }
+.btn{ 
+  padding:10px 16px; 
+  border-radius:10px; 
+  border:0; 
+  cursor:pointer; 
+  background:linear-gradient(90deg,var(--primary),var(--primary-light)); 
+  color:#fff;
+  font-weight:600;
+  font-size:14px;
+  transition:all 0.3s;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+}
+
+.btn:hover {
+  background:linear-gradient(90deg,var(--primary-dark),var(--primary));
+  transform:translateY(-2px);
+  box-shadow:0 4px 8px rgba(0,120,255,0.3);
+}
+
+.btn:active {
+  transform:translateY(0);
+}
+
+.btn:disabled {
+  background:#ccc;
+  cursor:not-allowed;
+  transform:none;
+  box-shadow:none;
+}
+
+.small{ padding:8px 12px; font-size:13px; border-radius:8px;}
+.input-text{ 
+  padding:10px 12px; 
+  border-radius:8px; 
+  border:1px solid #cfcfcf; 
+  font-size:14px; 
+  width:260px; 
+  text-align:center;
+  transition:border 0.3s;
+}
+
+.input-text:focus {
+  outline:none;
+  border-color:var(--primary);
+  box-shadow:0 0 0 2px rgba(0,120,255,0.2);
+}
+
+.file-list { 
+  text-align: right; 
+  margin-top:15px; 
+}
+
+.file-item { 
+  display:flex; 
+  justify-content:space-between; 
+  align-items:center; 
+  gap:10px; 
+  padding:12px 15px; 
+  border-bottom:1px solid #eef4fb; 
+  transition:background 0.2s;
+  border-radius:8px;
+}
+
+.file-item:hover {
+  background:#f8fbff;
+}
+
+.file-item .meta { text-align:right; flex:1; }
+.small-muted { color:var(--muted); font-size:12px; }
+
+/* صفحة تحليل البيانات المتقدم */
+.data-analysis-page {
+  display: none;
+}
+
+.analysis-container {
+  width: 100%;
+  margin: 0 auto;
+  background: white;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  padding: 20px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.analysis-header {
+  text-align: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid var(--primary);
+}
+
+.analysis-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.analysis-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.analysis-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.analysis-card {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.3s;
+}
+
+.analysis-card:hover {
+  transform: translateY(-5px);
+}
+
+.analysis-card-title {
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: var(--primary);
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 5px;
+}
+
+.analysis-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.stat-item {
+  flex: 1;
+  min-width: 120px;
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.chart-container {
+  width: 100%;
+  height: 300px;
+  margin-top: 15px;
+}
+
+.analysis-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  font-size: 14px;
+}
+
+.analysis-table th,
+.analysis-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.analysis-table th {
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+}
+
+.analysis-table tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+.analysis-table tr:hover {
+  background: #f0f7ff;
+}
+
+.insights-container {
+  background: #e7f3ff;
+  border-radius: 10px;
+  padding: 15px;
+  margin-top: 15px;
+}
+
+.insight-item {
+  padding: 10px;
+  margin-bottom: 10px;
+  background: white;
+  border-radius: 8px;
+  border-right: 4px solid var(--primary);
+}
+
+.insight-title {
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: var(--primary);
+}
+
+.insight-content {
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* شريط التقدم */
+.progress {
+  height:6px;
+  background:#e0e0e0;
+  border-radius:3px;
+  overflow:hidden;
+  margin:10px 0;
+}
+.progress-bar {
+  height:100%;
+  background:linear-gradient(90deg, var(--primary), var(--primary-light));
+  border-radius:3px;
+  transition:width 0.3s;
+}
+
+/* الحالة والإشعارات */
+.status { 
+  padding:10px 15px; 
+  border-radius:8px; 
+  margin:10px 0; 
+  text-align:center;
+  font-weight:500;
+}
+.status.info { background:#e7f3ff; color:var(--primary); border-left:4px solid var(--primary); }
+.status.success { background:#e7ffe7; color:var(--success); border-left:4px solid var(--success); }
+.status.warning { background:#fff4d6; color:#b35a00; border-left:4px solid #ffc107; }
+.status.error { background:#ffdede; color:var(--danger); border-left:4px solid var(--danger); }
+
+/* التجاوب */
+@media (max-width: 768px) {
+  .analysis-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .analysis-container {
+    padding: 10px;
+  }
+  
+  .analysis-table {
+    font-size: 12px;
+  }
+}
+
+/* popup */
+.popup-bg{ 
+  display:none; 
+  position:fixed; 
+  inset:0; 
+  background:rgba(0,0,0,0.5); 
+  align-items:center; 
+  justify-content:center; 
+  z-index:1000; 
+  backdrop-filter:blur(2px);
+}
+.popup{ 
+  background:#fff; 
+  padding:25px; 
+  border-radius:12px; 
+  width:92%; 
+  max-width:720px; 
+  box-shadow:0 10px 30px rgba(0,0,0,0.15); 
+  text-align:center;
+  max-height:90vh;
+  overflow-y:auto;
+  animation:popupFadeIn 0.3s ease-out;
+}
+@keyframes popupFadeIn {
+  from { opacity:0; transform:scale(0.9); }
+  to { opacity:1; transform:scale(1); }
+}
+.popup h3{ margin:0 0 15px 0; color:var(--text); }
+.popup .row{ display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; margin:10px 0; }
+.popup input[type="text"], .popup input[type="number"], .popup select { 
+  padding:10px; 
+  border-radius:8px; 
+  border:1px solid #ddd; 
+  width:240px; 
+  text-align:center;
+  font-size:14px;
+}
+.popup select {
+  background:white;
+  cursor:pointer;
+}
+
+/* small controls */
+.action-btn { background:var(--danger); }
+.action-btn:hover { background:#c82333; }
+.ok-btn { background:var(--success); }
+.ok-btn:hover { background:#218838; }
+.info-line{ color:var(--muted); font-size:13px; margin-top:10px; }
+
+/* loading indicator */
+.loading {
+  display:inline-block;
+  width:20px;
+  height:20px;
+  border:3px solid rgba(255,255,255,0.3);
+  border-radius:50%;
+  border-top-color:#fff;
+  animation:spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* animation styles */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateX(-50%) translateY(0); }
+  to { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+}
+
+/* New styles for final result page controls */
+.final-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 10px 15px;
+  background: #f8fbff;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.final-controls .left-controls,
+.final-controls .right-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.final-controls .btn {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.final-controls .btn i {
+  margin-left: 5px;
+}
+
+/* New styles for editable table */
+.editable-table td {
+  position: relative;
+}
+
+.editable-table td input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: center;
+  padding: 5px;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.editable-table td input:focus {
+  outline: 2px solid var(--primary);
+  background: white;
+  border-radius: 4px;
+}
+
+/* Save file popup styles */
+.save-file-popup {
+  max-width: 400px;
+}
+
+.save-file-popup .popup-content {
+  text-align: right;
+  margin-bottom: 20px;
+}
+
+.save-file-popup input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-top: 10px;
+}
+
+.save-file-popup .file-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+/* Edit Files Page Styles */
+.edit-files-page {
+  display: none;
+}
+
+.edit-files-container {
+  display: block;
+  margin-top: 20px;
+}
+
+.edit-files-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border);
+}
+
+.edit-files-content {
+  background: white;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.edit-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.edit-table th,
+.edit-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.edit-table th {
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+}
+
+.edit-table tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+.edit-table tr:hover {
+  background: #f0f7ff;
+}
+
+.edit-cell {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: center;
+  padding: 5px;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.edit-cell:focus {
+  outline: 2px solid var(--primary);
+  background: white;
+  border-radius: 4px;
+}
+
+.column-actions {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.row-actions {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+}
+
+.file-selector {
+  padding: 10px;
+  margin: 5px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s;
+  border: 1px solid transparent;
+}
+
+.file-selector:hover {
+  background: #e9ecef;
+}
+
+.file-selector.active {
+  background: var(--primary-light);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* NEW: Save All Files Button */
+.save-all-files-btn {
+  background: var(--success);
+  margin-top: 20px;
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+}
+
+.save-all-files-btn:hover {
+  background: #218838;
+}
+
+/* NEW: File Table Header */
+.file-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 10px 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.file-table-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.file-table-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* NEW: Saved Projects Page */
+.saved-projects-page {
+  display: none;
+}
+
+.saved-projects-list {
+  margin-top: 20px;
+  text-align: right;
+}
+
+.saved-project-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.saved-project-item:hover {
+  background: #f8fbff;
+}
+
+.saved-project-info {
+  flex: 1;
+  text-align: right;
+}
+
+.saved-project-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* NEW: Project Management Controls */
+.project-controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+/* NEW: Page Title Input */
+.page-title-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin: 10px 0;
+  text-align: center;
+  font-size: 16px;
+}
+
+/* NEW: Excel Export Button */
+.excel-export-btn {
+  background: #28a745;
+}
+
+.excel-export-btn:hover {
+  background: #218838;
+}
+
+/* NEW: Tamam Import Button */
+.tamam-import-btn {
+  background: #17a2b8;
+}
+
+.tamam-import-btn:hover {
+  background: #138496;
+}
+
+/* NEW: File Input for Tamam */
+.tamam-file-input {
+  display: none;
+}
+
+/* NEW: Tamam Table Order Controls */
+.tamam-order-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.tamam-order-controls label {
+  font-weight: 600;
+  margin-left: 10px;
+}
+
+.tamam-order-controls input {
+  width: 60px;
+  text-align: center;
+  padding: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+/* NEW: Save Tamam Button */
+.save-tamam-btn {
+  background: #28a745;
+}
+
+.save-tamam-btn:hover {
+  background: #218838;
+}
+
+/* NEW: Save Image Button */
+.save-image-btn {
+  background: #0078d7;
+}
+
+.save-image-btn:hover {
+  background: #005fa3;
+}
+
+/* NEW: Tamam Adaptive Table Styles */
+.tamam-adaptive-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.tamam-adaptive-table th,
+.tamam-adaptive-table td {
+  border: 1px solid #ddd;
+  padding: 4px 5px;
+  text-align: center;
+  word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: auto;
+  line-height: 1.2;
+}
+
+.tamam-adaptive-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.tamam-adaptive-table tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+.tamam-adaptive-table .input-row {
+  background: #f8f9fa !important;
+  font-weight: 700;
+  font-size: 10px;
+}
+
+/* NEW: Adaptive font size for tables */
+.adaptive-font-small {
+  font-size: 7px !important;
+}
+
+.adaptive-font-medium {
+  font-size: 8px !important;
+}
+
+.adaptive-font-large {
+  font-size: 9px !important;
+}
+
+/* NEW: Tamam page layout improvements */
+.tamam-page-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+}
+
+.tamam-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(45%, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.tamam-grid-item {
+  display: flex;
+  flex-direction: column;
+}
+
+/* NEW: Print optimization */
+@media print {
+  .tamam-grid-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  
+  .tamam-table-container {
+    margin-bottom: 8px;
+  }
+}
+
+/* NEW: Two-column layout for Tamam page */
+.tamam-two-column-layout {
+  display: flex;
+  flex-direction: row;
+  gap: 12mm;
+  width: 100%;
+  height: 100%;
+}
+
+.tamam-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* NEW: PDF content styling */
+#pdf-content {
+  width: 210mm;
+  height: 297mm;
+  background: #fff;
+  margin: 20px auto;
+  padding: 20mm 15mm;
+  box-sizing: border-box;
+  overflow: hidden;
+  transform-origin: top center;
+  transition: transform 0.3s ease;
+}
+
+.tamam-pdf-header {
+  text-align: center;
+  font-size: 18pt;
+  margin-bottom: 15px;
+  color: #1a1a1a;
+}
+
+.tamam-pdf-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  word-wrap: break-word;
+  background: #fafafa;
+  font-size: 11pt;
+}
+
+.tamam-pdf-table th, 
+.tamam-pdf-table td {
+  border: 0.6px solid #ccc;
+  padding: 6px 4px;
+  text-align: center;
+}
+
+.tamam-pdf-table th {
+  background: #e0e0e0;
+  font-weight: bold;
+}
+
+.tamam-pdf-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+/* NEW: PDF generation button */
+.pdf-generate-btn {
+  background-color: #0078d7;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  margin: 20px auto;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14pt;
+}
+
+.pdf-generate-btn:hover {
+  background-color: #005fa3;
+}
+
+/* NEW: Compact mode for Tamam tables */
+.compact-table {
+  font-size: 7px !important;
+}
+
+.compact-table th,
+.compact-table td {
+  padding: 2px 3px !important;
+}
+
+/* NEW: Ultra compact mode for very large tables */
+.ultra-compact-table {
+  font-size: 6px !important;
+}
+
+.ultra-compact-table th,
+.ultra-compact-table td {
+  padding: 1px 2px !important;
+}
+
+/* NEW: Word export styles */
+.word-export-container {
+  width: 100%;
+  height: auto;
+  background: white;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.word-export-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 15px;
+}
+
+.word-export-table th,
+.word-export-table td {
+  border: 1px solid #000;
+  padding: 5px;
+  text-align: center;
+  font-size: 10pt;
+}
+
+.word-export-table th {
+  background: #f2f2f2;
+  font-weight: bold;
+}
+
+/* NEW: Tamam page updated styles */
+.tamam-table-container {
+  margin-bottom: 0;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid #ddd;
+}
+
+.tamam-table-container:last-child {
+  border-bottom: none;
+}
+
+.tamam-table-title {
+  background: #e9ecef;
+  color: #333;
+  padding: 6px;
+  font-weight: 600;
+  text-align: center;
+  font-size: 11px;
+  border-bottom: 1px solid #ddd;
+}
+
+.tamam-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  font-size: 9px;
+}
+
+.tamam-table th,
+.tamam-table td {
+  border: 1px solid #ddd;
+  padding: 3px 4px;
+  text-align: center;
+  word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: auto;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.tamam-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.tamam-table tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+.tamam-table .input-row {
+  background: #e7f3ff !important;
+  font-weight: 700;
+}
+
+.tamam-header {
+  text-align: center;
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid var(--primary);
+}
+
+.tamam-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 0;
+}
+
+/* NEW: Excel Custom Export Styles */
+.excel-export-page {
+  display: none;
+}
+
+.excel-export-container {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.excel-export-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin: 20px auto;
+  max-width: 500px;
+  padding: 20px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.excel-export-controls .control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: right;
+}
+
+.excel-export-controls label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.excel-export-controls select,
+.excel-export-controls input {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  text-align: center;
+  font-size: 14px;
+}
+
+.excel-export-controls select {
+  background: white;
+  cursor: pointer;
+}
+
+.excel-export-preview {
+  margin-top: 20px;
+  overflow: auto;
+  max-height: 400px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+}
+
+/* NEW: Two-column layout for Excel Export Preview */
+.excel-two-column-preview {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  width: 100%;
+  margin-top: 15px;
+}
+
+.excel-preview-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.excel-preview-table-container {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 15px;
+}
+
+.excel-preview-table-title {
+  background: #f5f5f5;
+  color: #333;
+  padding: 8px;
+  font-weight: 600;
+  text-align: center;
+  font-size: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+.excel-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9px;
+  table-layout: fixed;
+}
+
+.excel-preview-table th,
+.excel-preview-table td {
+  border: 1px solid #ddd;
+  padding: 4px 5px;
+  text-align: center;
+  word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: auto;
+  line-height: 1.2;
+}
+
+.excel-preview-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.excel-preview-table tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+.excel-preview-table .input-row {
+  background: #f8f9fa !important;
+  font-weight: 700;
+  font-size: 10px;
+}
+
+/* NEW: Excel Export Layout Controls */
+.excel-layout-controls {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.excel-layout-controls label {
+  font-weight: 600;
+  margin-left: 10px;
+}
+
+.excel-layout-controls select {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+}
+
+/* NEW: Excel Export Table Styles */
+.excel-export-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  table-layout: fixed;
+}
+
+.excel-export-table th,
+.excel-export-table td {
+  border: 1px solid #ddd;
+  padding: 6px 8px;
+  text-align: center;
+  word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: auto;
+  line-height: 1.3;
+}
+
+.excel-export-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.excel-export-table tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+.excel-export-table .input-row {
+  background: #e7f3ff !important;
+  font-weight: 700;
+}
+
+/* NEW: Advanced Excel Export Styles */
+.excel-sections-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.section-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+
+.section-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  min-width: 150px;
+}
+
+.section-item input {
+  padding: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.section-merge-controls {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  justify-content: center;
+}
+
+.section-layout-preview {
+  margin-top: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  min-height: 300px;
+  position: relative;
+}
+
+.section-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 15px;
+  height: 100%;
+}
+
+.section-cell {
+  border: 1px dashed #ccc;
+  border-radius: 4px;
+  padding: 10px;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #f9f9f9;
+}
+
+.section-cell.merged {
+  grid-column: span 2;
+  background: #e7f3ff;
+}
+
+.section-cell-header {
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: var(--primary);
+}
+
+.section-cell-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.section-cell-actions {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+}
+
+/* NEW: Manual numbering styles */
+.numbering-controls {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.numbering-input {
+  width: 60px;
+  text-align: center;
+  padding: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.numbered-cell {
+  position: relative;
+}
+
+.numbered-cell::before {
+  content: attr(data-number);
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  background: #ffc107;
+  color: #000;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 3px;
+  z-index: 1;
+}
+
+/* NEW: Advanced sections vertical layout */
+.advanced-sections-vertical {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  width: 100%;
+  height: 100%;
+}
+
+.advanced-section-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* NEW: Data Analysis Button */
+.data-analysis-btn {
+  background: #6f42c1;
+}
+
+.data-analysis-btn:hover {
+  background: #5a2d9e;
+}
+
+/* responsive */
+@media (max-width:820px){ 
+  .controls{ flex-direction:column; } 
+  .input-text{ width:100%; } 
+  .result-table { min-width:100%; } 
+  .popup { padding:20px 15px; }
+  .btn { width:100%; justify-content:center; }
+}
+@media (max-width:480px){
+  body { padding:10px; }
+  .card { padding:15px; width:100%; }
+  .title { font-size:20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="title">نظام التمام المتكامل - إدارة البيانات وعرض التمام</div>
+  <div class="muted">دمج نظام التمام مع غرفة العمليات الرئيسية</div>
+</div>
+
+<!-- التحكم الرئيسي -->
+<div id="mainCard" class="card">
+  <div class="controls">
+    <label class="btn small" for="filesInput">
+      <i class="fas fa-file-import"></i> استيراد ملف Excel
+    </label>
+    <input id="filesInput" type="file" accept=".xlsx,.xls" multiple>
+    <button id="defineInputsBtn" class="btn small">
+      <i class="fas fa-edit"></i> تحديد المدخلات
+    </button>
+    <button id="editFilesBtn" class="btn small" style="background:#fd7e14">
+      <i class="fas fa-edit"></i> تعديل الملفات
+    </button>
+    <button id="finalBtn" class="btn small" disabled>
+      <i class="fas fa-file-export"></i> عرض النتيجة النهائية
+    </button>
+    <button id="tamamBtn" class="btn small" style="background:#17a2b8">
+      <i class="fas fa-file-pdf"></i> عرض التمام
+    </button>
+    <button id="customExcelBtn" class="btn small" style="background:#6f42c1">
+      <i class="fas fa-file-excel"></i> تصدير Excel مخصص
+    </button>
+    <!-- NEW: Data Analysis Button -->
+    <button id="dataAnalysisBtn" class="btn small data-analysis-btn">
+      <i class="fas fa-chart-bar"></i> تحليل البيانات المتقدم
+    </button>
+    <button id="saveAppBtn" class="btn small" style="background:#28a745">
+      <i class="fas fa-save"></i> حفظ المشروع
+    </button>
+    <button id="loadProjectsBtn" class="btn small" style="background:#6f42c1">
+      <i class="fas fa-folder-open"></i> المشروعات المحفوظة
+    </button>
+    <input id="globalTableName" class="input-text" placeholder="اسم مجموعة الجداول (اختياري)">
+  </div>
+  
+  <div id="progressContainer" style="display:none;">
+    <div class="progress">
+      <div id="progressBar" class="progress-bar" style="width:0%"></div>
+    </div>
+    <div id="progressText" class="muted">جارٍ المعالجة...</div>
+  </div>
+  
+  <div id="status" class="status info">سجل: لا ملفات محمّلة</div>
+  <div id="filesArea" class="file-list"></div>
+</div>
+
+<!-- NEW: DATA ANALYSIS PAGE -->
+<div id="dataAnalysisPage" class="card data-analysis-page">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <div>
+      <button id="backFromAnalysis" class="btn" style="background:#6c7">
+        <i class="fas fa-arrow-right"></i> رجوع
+      </button>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-weight:700; font-size:20px;">تحليل البيانات المتقدم</div>
+      <div class="muted">تحليل احترافي للبيانات باستخدام خوارزميات الذكاء الاصطناعي</div>
+    </div>
+    <div style="min-width:120px;">
+      <button id="exportAnalysisReport" class="btn small" style="background:#28a745">
+        <i class="fas fa-file-pdf"></i> تصدير التقرير
+      </button>
+    </div>
+  </div>
+
+  <div class="analysis-container" id="analysisContainer">
+    <!-- سيتم إضافة تحليل البيانات هنا -->
+  </div>
+</div>
+
+<!-- SAVED PROJECTS PAGE -->
+<div id="savedProjectsPage" class="card saved-projects-page">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <div>
+      <button id="backFromProjects" class="btn" style="background:#6c7">
+        <i class="fas fa-arrow-right"></i> رجوع
+      </button>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-weight:700; font-size:20px;">المشروعات المحفوظة</div>
+      <div class="muted">اختر مشروعًا للعمل عليه</div>
+    </div>
+    <div style="min-width:120px;"></div>
+  </div>
+
+  <div id="savedProjectsList" class="saved-projects-list">
+    <!-- سيتم إضافة المشروعات المحفوظة هنا -->
+  </div>
+</div>
+
+<!-- EDIT FILES PAGE -->
+<div id="editFilesPage" class="card edit-files-page">
+  <div class="edit-files-header">
+    <div>
+      <button id="backFromEdit" class="btn" style="background:#6c7">
+        <i class="fas fa-arrow-right"></i> رجوع
+      </button>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-weight:700; font-size:20px;">تعديل الملفات</div>
+      <div class="muted">التعديلات تنعكس مباشرة على النتيجة النهائية</div>
+    </div>
+    <div style="min-width:120px;">
+      <button id="saveAllFiles" class="btn small save-all-files-btn">
+        <i class="fas fa-save"></i> حفظ جميع التعديلات
+      </button>
+    </div>
+  </div>
+
+  <div class="edit-files-container" id="editFilesContainer">
+    <!-- سيتم إضافة الجداول هنا بشكل متسلسل -->
+  </div>
+</div>
+
+<!-- صفحة التمام -->
+<div id="tamamPage" class="card tamam-page">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <div>
+      <button id="backFromTamam" class="btn" style="background:#6c7">
+        <i class="fas fa-arrow-right"></i> رجوع
+      </button>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-weight:700; font-size:20px;">صفحة التمام</div>
+      <div class="muted">تنسيق A4 للطباعة والتصدير</div>
+    </div>
+    <div style="min-width:120px;">
+      <!-- زر حفظ صفحة التمام -->
+      <button id="saveTamamBtn" class="btn small save-tamam-btn">
+        <i class="fas fa-file-pdf"></i> حفظ PDF
+      </button>
+      <!-- زر حفظ صفحة التمام كصورة -->
+      <button id="saveImageBtn" class="btn small save-image-btn">
+        <i class="fas fa-image"></i> حفظ صورة
+      </button>
+    </div>
+  </div>
+
+  <div class="tamam-controls">
+    <div class="left-controls">
+      <input type="text" id="tamamTitle" class="input-text" placeholder="عنوان صفحة التمام" value="التمام">
+      <!-- زر استيراد ملف جديد في صفحة التمام -->
+      <label class="btn small tamam-import-btn" for="tamamFileInput">
+        <i class="fas fa-file-import"></i> استيراد ملف
+      </label>
+      <input id="tamamFileInput" class="tamam-file-input" type="file" accept=".xlsx,.xls">
+    </div>
+    <div class="right-controls">
+      <button id="refreshTamam" class="btn small">
+        <i class="fas fa-sync"></i> تحديث العرض
+      </button>
+      <button id="compactMode" class="btn small" style="background:#6f42c1">
+        <i class="fas fa-compress"></i> وضع التصغير
+      </button>
+      <button id="twoColumnMode" class="btn small" style="background:#fd7e14">
+        <i class="fas fa-columns"></i> وضع العمودين
+      </button>
+      <button id="ultraCompactMode" class="btn small" style="background:#e83e8c">
+        <i class="fas fa-compress-arrows-alt"></i> تصغير متقدم
+      </button>
+    </div>
+  </div>
+
+  <!-- إضافة عناصر التحكم في ترتيب الجداول -->
+  <div class="tamam-order-controls">
+    <label>ترتيب الجداول:</label>
+    <div id="tamamOrderInputs">
+      <!-- سيتم إضافة حقول إدخال ترتيب الجداول هنا -->
+    </div>
+  </div>
+
+  <div id="tamamPagesContainer" class="tamam-pages-container">
+    <!-- سيتم إضافة صفحات A4 هنا -->
+  </div>
+</div>
+
+<!-- صفحة تصدير Excel مخصص -->
+<div id="excelExportPage" class="card excel-export-page">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <div>
+      <button id="backFromExcel" class="btn" style="background:#6c7">
+        <i class="fas fa-arrow-right"></i> رجوع
+      </button>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-weight:700; font-size:20px;">تصدير Excel مخصص</div>
+      <div class="muted">تخصيص تنسيق ملف Excel قبل التصدير</div>
+    </div>
+    <div style="min-width:120px;"></div>
+  </div>
+
+  <div class="excel-export-container">
+    <div class="excel-export-controls">
+      <div class="control-group">
+        <label>لون العنوان:</label>
+        <select id="color">
+          <option value="FF007BFF">أزرق</option>
+          <option value="FF2E8B57">أخضر</option>
+          <option value="FFFFA500">برتقالي</option>
+          <option value="FFDC143C">أحمر</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>عرض الأعمدة:</label>
+        <input type="number" id="width" value="20" min="10" max="50">
+      </div>
+
+      <div class="control-group">
+        <label>اسم الملف:</label>
+        <input type="text" id="excelFileName" value="تقرير_A4" placeholder="اسم ملف Excel">
+      </div>
+
+      <div class="control-group">
+        <label>عنوان التقرير:</label>
+        <input type="text" id="excelReportTitle" value="📄 تقرير مخصص بحجم A4" placeholder="عنوان التقرير">
+      </div>
+      
+      <!-- UPDATED: Layout Controls - Removed two-column option -->
+      <div class="excel-layout-controls">
+        <div class="control-group">
+          <label>تخطيط التصدير:</label>
+          <select id="excelLayout">
+            <option value="single">صفحة واحدة</option>
+            <option value="multi-sheet">أوراق متعددة</option>
+            <option value="advanced-sections">أقسام متقدمة</option>
+          </select>
+        </div>
+        
+        <div class="control-group">
+          <label>حجم الخط:</label>
+          <select id="excelFontSize">
+            <option value="10">صغير (10)</option>
+            <option value="11" selected>متوسط (11)</option>
+            <option value="12">كبير (12)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- UPDATED: Advanced Sections Controls - Vertical layout -->
+      <div id="advancedSectionsControls" class="excel-sections-controls" style="display:none;">
+        <h3 style="margin-bottom:15px;">إدارة الأقسام المتقدمة</h3>
+        
+        <div class="section-controls">
+          <label>عدد الأقسام:</label>
+          <input type="number" id="sectionsCount" min="1" max="8" value="4">
+          <button id="generateSectionsBtn" class="btn small">
+            <i class="fas fa-cogs"></i> إنشاء الأقسام
+          </button>
+        </div>
+        
+        <div id="sectionsContainer" class="sections-container">
+          <!-- سيتم إنشاء الأقسام هنا -->
+        </div>
+        
+        <div class="section-merge-controls">
+          <button id="mergeSectionsBtn" class="btn small" style="background:#17a2b8">
+            <i class="fas fa-object-group"></i> دمج الأقسام
+          </button>
+          <button id="saveSectionsLayoutBtn" class="btn small" style="background:#28a745">
+            <i class="fas fa-save"></i> حفظ التخطيط
+          </button>
+        </div>
+        
+        <div class="section-layout-preview" id="sectionLayoutPreview">
+          <div class="advanced-sections-vertical" id="advancedSectionsVertical">
+            <!-- سيتم عرض تخطيط الأقسام هنا بشكل عمودي -->
+          </div>
+        </div>
+        
+        <button id="exportAdvancedExcel" class="btn" style="background:#28a745; margin-top:15px;">
+          <i class="fas fa-file-excel"></i> تصدير Excel متقدم
+        </button>
+      </div>
+
+      <button id="generateExcel" class="btn" style="background:#28a745; margin-top:10px;">
+        <i class="fas fa-file-excel"></i> إنشاء Excel بحجم A4
+      </button>
+    </div>
+
+    <div class="excel-export-preview" id="excelPreview">
+      <!-- سيتم عرض معاينة البيانات هنا -->
+    </div>
+  </div>
+</div>
+
+<!-- POPUP: تحديد المدخلات -->
+<div id="inputsPopup" class="popup-bg" aria-hidden="true">
+  <div class="popup" role="dialog" aria-modal="true">
+    <h3>كم عدد المدخلات؟</h3>
+    <div class="row" style="margin-top:10px;">
+      <input type="number" id="inputsCount" min="1" max="50" placeholder="أدخل رقمًا">
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <button id="toInputsNames" class="btn">
+        <i class="fas fa-arrow-right"></i> التالي
+      </button>
+      <button id="closeInputsPopup" class="btn" style="background:#aaa">
+        <i class="fas fa-times"></i> إلغاء
+      </button>
+    </div>
+    <div id="inputsNamesArea" style="margin-top:12px;"></div>
+  </div>
+</div>
+
+<!-- POPUP: Save File -->
+<div id="saveFilePopup" class="popup-bg" aria-hidden="true">
+  <div class="popup save-file-popup">
+    <h3>حفظ النتيجة النهائية</h3>
+    <div class="popup-content">
+      <p>سيتم حفظ النتيجة النهائية في ملف على جهازك.</p>
+      <input type="text" id="saveFileName" placeholder="اسم الملف (اختياري)" value="النتيجة_النهائية">
+    </div>
+    <div class="file-actions">
+      <button id="confirmSaveFile" class="btn ok-btn">
+        <i class="fas fa-save"></i> حفظ
+      </button>
+      <button id="closeSaveFilePopup" class="btn" style="background:#aaa">
+        <i class="fas fa-times"></i> إلغاء
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- POPUP: Table Name -->
+<div id="tableNamePopup" class="popup-bg" aria-hidden="true">
+  <div class="popup save-file-popup">
+    <h3>إدخال اسم الجدول</h3>
+    <div class="popup-content">
+      <p>أدخل اسم الجدول:</p>
+      <input type="text" id="tableNameInput" placeholder="اسم الجدول">
+    </div>
+    <div class="file-actions">
+      <button id="confirmTableName" class="btn ok-btn">
+        <i class="fas fa-save"></i> حفظ
+      </button>
+      <button id="closeTableNamePopup" class="btn" style="background:#aaa">
+        <i class="fas fa-times"></i> إلغاء
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- POPUP: Manual Numbering -->
+<div id="numberingPopup" class="popup-bg" aria-hidden="true">
+  <div class="popup save-file-popup">
+    <h3>ترقيم الخلايا يدويًا</h3>
+    <div class="popup-content">
+      <p>أدخل أرقام الترقيم للخلايا:</p>
+      <div id="numberingInputsContainer">
+        <!-- سيتم إضافة حقول إدخال الترقيم هنا -->
+      </div>
+    </div>
+    <div class="file-actions">
+      <button id="confirmNumbering" class="btn ok-btn">
+        <i class="fas fa-save"></i> حفظ الترقيم
+      </button>
+      <button id="closeNumberingPopup" class="btn" style="background:#aaa">
+        <i class="fas fa-times"></i> إلغاء
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT PAGE -->
+<div id="resultPage" class="card" style="display:none;">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <button id="backToMain" class="btn" style="background:#6c7">
+        <i class="fas fa-arrow-right"></i> رجوع
+      </button>
+    </div>
+    <div style="text-align:center;">
+      <div id="finalTitle" style="font-weight:700; font-size:20px;"></div>
+      <div id="finalNote" class="muted"></div>
+    </div>
+    <div style="min-width:120px;">
+      <!-- تم تغيير زر تصدير النتائج إلى حفظ في المشروع -->
+      <button id="saveToProjectBtn" class="btn small" style="background:#28a745">
+        <i class="fas fa-save"></i> حفظ في المشروع
+      </button>
+    </div>
+  </div>
+
+  <!-- Final Result Controls -->
+  <div class="final-controls">
+    <div class="left-controls">
+      <button id="editTableBtn" class="btn small" style="background:#ffc107; color: #000">
+        <i class="fas fa-edit"></i> تعديل الجدول
+      </button>
+      <button id="changeTableNameBtn" class="btn small" style="background:#6f42c1">
+        <i class="fas fa-font"></i> تغيير أسماء الجداول
+      </button>
+      <!-- NEW: Manual Numbering Button -->
+      <button id="manualNumberingBtn" class="btn small" style="background:#20c997">
+        <i class="fas fa-sort-numeric-down"></i> ترقيم يدوي
+      </button>
+    </div>
+    <div class="right-controls">
+      <!-- تم إزالة زر حفظ النتيجة -->
+    </div>
+  </div>
+
+  <div id="finalContent" style="margin-top:12px; text-align:right;"></div>
+</div>
+
+<script>
+/* ---------- State ---------- */
+const filesData = []; // each: {id, name, headerRowIndex, headers:[], rows: [row arrays], dataObjects: [objects]}
+const tableNames = {}; // تخزين أسماء الجداول المخصصة
+const tableOrder = {}; // تخزين ترتيب الجداول في صفحة التمام
+
+// تخزين المشروعات المحفوظة
+let savedProjects = [];
+
+// وضع عرض صفحة التمام
+let tamamDisplayMode = 'grid'; // 'grid' or 'two-column'
+let tamamCompactMode = 'normal'; // 'normal', 'compact', 'ultra-compact'
+
+// Advanced Excel Sections
+let sectionsLayout = []; // تخزين تخطيط الأقسام
+let mergedSections = []; // تخزين الأقسام المدمجة
+
+// NEW: Manual numbering storage
+const manualNumbering = {}; // تخزين الترقيم اليدوي {fileId: {groupIndex: number}}
+
+/* DOM Elements */
+const filesInput = document.getElementById('filesInput');
+const filesArea = document.getElementById('filesArea');
+const statusEl = document.getElementById('status');
+const defineInputsBtn = document.getElementById('defineInputsBtn');
+const editFilesBtn = document.getElementById('editFilesBtn');
+const finalBtn = document.getElementById('finalBtn');
+const tamamBtn = document.getElementById('tamamBtn');
+const customExcelBtn = document.getElementById('customExcelBtn');
+const dataAnalysisBtn = document.getElementById('dataAnalysisBtn'); // NEW: Data Analysis Button
+const saveAppBtn = document.getElementById('saveAppBtn');
+const loadProjectsBtn = document.getElementById('loadProjectsBtn');
+const globalTableName = document.getElementById('globalTableName');
+const progressContainer = document.getElementById('progressContainer');
+const progressBar = document.getElementById('progressBar');
+const progressText = document.getElementById('progressText');
+const saveToProjectBtn = document.getElementById('saveToProjectBtn'); // تم تغيير الاسم
+const resultPage = document.getElementById('resultPage');
+const finalContent = document.getElementById('finalContent');
+const finalTitle = document.getElementById('finalTitle');
+const finalNote = document.getElementById('finalNote');
+const backToMain = document.getElementById('backToMain');
+
+// NEW: Data Analysis Page Elements
+const dataAnalysisPage = document.getElementById('dataAnalysisPage');
+const backFromAnalysis = document.getElementById('backFromAnalysis');
+const exportAnalysisReport = document.getElementById('exportAnalysisReport');
+const analysisContainer = document.getElementById('analysisContainer');
+
+// Tamam Page Elements
+const tamamPage = document.getElementById('tamamPage');
+const backFromTamam = document.getElementById('backFromTamam');
+const saveTamamBtn = document.getElementById('saveTamamBtn');
+const saveImageBtn = document.getElementById('saveImageBtn');
+const tamamTitle = document.getElementById('tamamTitle');
+const tamamPagesContainer = document.getElementById('tamamPagesContainer');
+const refreshTamam = document.getElementById('refreshTamam');
+const compactMode = document.getElementById('compactMode');
+const ultraCompactMode = document.getElementById('ultraCompactMode');
+const twoColumnMode = document.getElementById('twoColumnMode');
+const tamamFileInput = document.getElementById('tamamFileInput');
+const tamamOrderInputs = document.getElementById('tamamOrderInputs');
+
+// Excel Export Page Elements
+const excelExportPage = document.getElementById('excelExportPage');
+const backFromExcel = document.getElementById('backFromExcel');
+const generateExcel = document.getElementById('generateExcel');
+const excelPreview = document.getElementById('excelPreview');
+const excelLayout = document.getElementById('excelLayout');
+const excelFontSize = document.getElementById('excelFontSize');
+
+// Advanced Excel Sections Elements
+const advancedSectionsControls = document.getElementById('advancedSectionsControls');
+const sectionsCount = document.getElementById('sectionsCount');
+const generateSectionsBtn = document.getElementById('generateSectionsBtn');
+const sectionsContainer = document.getElementById('sectionsContainer');
+const mergeSectionsBtn = document.getElementById('mergeSectionsBtn');
+const saveSectionsLayoutBtn = document.getElementById('saveSectionsLayoutBtn');
+const sectionLayoutPreview = document.getElementById('sectionLayoutPreview');
+const advancedSectionsVertical = document.getElementById('advancedSectionsVertical');
+const exportAdvancedExcel = document.getElementById('exportAdvancedExcel');
+
+const inputsPopup = document.getElementById('inputsPopup');
+const inputsCount = document.getElementById('inputsCount');
+const toInputsNames = document.getElementById('toInputsNames');
+const closeInputsPopup = document.getElementById('closeInputsPopup');
+const inputsNamesArea = document.getElementById('inputsNamesArea');
+
+const saveFilePopup = document.getElementById('saveFilePopup');
+const saveFileName = document.getElementById('saveFileName');
+const confirmSaveFile = document.getElementById('confirmSaveFile');
+const closeSaveFilePopup = document.getElementById('closeSaveFilePopup');
+
+// Table Name Popup
+const tableNamePopup = document.getElementById('tableNamePopup');
+const tableNameInput = document.getElementById('tableNameInput');
+const confirmTableName = document.getElementById('confirmTableName');
+const closeTableNamePopup = document.getElementById('closeTableNamePopup');
+const changeTableNameBtn = document.getElementById('changeTableNameBtn');
+
+// NEW: Manual Numbering Popup
+const numberingPopup = document.getElementById('numberingPopup');
+const numberingInputsContainer = document.getElementById('numberingInputsContainer');
+const confirmNumbering = document.getElementById('confirmNumbering');
+const closeNumberingPopup = document.getElementById('closeNumberingPopup');
+const manualNumberingBtn = document.getElementById('manualNumberingBtn');
+
+// Edit Files Page
+const editFilesPage = document.getElementById('editFilesPage');
+const editFilesContainer = document.getElementById('editFilesContainer');
+const backFromEdit = document.getElementById('backFromEdit');
+const saveAllFiles = document.getElementById('saveAllFiles');
+
+// Saved Projects Page
+const savedProjectsPage = document.getElementById('savedProjectsPage');
+const savedProjectsList = document.getElementById('savedProjectsList');
+const backFromProjects = document.getElementById('backFromProjects');
+
+// Final result page controls
+const editTableBtn = document.getElementById('editTableBtn');
+
+/* inputs + mapping */
+let userInputs = []; // array of strings
+let mainInput = null;
+let candidateMappingPerFile = {}; // fileId => { input => [{header,score}, ...] }
+let finalMappingPerFile = {}; // fileId => { input => header }
+
+/* Edit state */
+let activeEditFileId = null;
+let isEditingTable = false;
+let currentTableForNaming = null;
+let currentFileForNumbering = null; // NEW: لتخزين الملف الحالي للترقيم
+
+/* ---------- Advanced Data Analysis System ---------- */
+
+// تهيئة نظام تحليل البيانات المتقدم
+function initializeDataAnalysis() {
+  dataAnalysisBtn.addEventListener('click', () => {
+    if (filesData.length === 0) {
+      showNotification('لا توجد ملفات لتحليلها', 'warning');
+      return;
+    }
+    
+    showDataAnalysisPage();
+  });
+  
+  backFromAnalysis.addEventListener('click', () => {
+    dataAnalysisPage.style.display = 'none';
+    document.getElementById('mainCard').style.display = 'block';
+  });
+  
+  exportAnalysisReport.addEventListener('click', () => {
+    exportAnalysisToPdf();
+  });
+}
+
+// عرض صفحة تحليل البيانات
+function showDataAnalysisPage() {
+  document.getElementById('mainCard').style.display = 'none';
+  dataAnalysisPage.style.display = 'block';
+  
+  renderDataAnalysis();
+}
+
+// عرض تحليل البيانات
+function renderDataAnalysis() {
+  analysisContainer.innerHTML = '';
+  
+  if (filesData.length === 0) {
+    analysisContainer.innerHTML = `
+      <div class="status info" style="text-align:center;">
+        <i class="fas fa-info-circle"></i> لا توجد بيانات للتحليل
+      </div>
+    `;
+    return;
+  }
+  
+  showProgress(true, 'جارٍ تحليل البيانات...');
+  
+  setTimeout(() => {
+    let analysisHTML = `
+      <div class="analysis-header">
+        <div class="analysis-title">تحليل البيانات المتقدم</div>
+        <div class="muted">تحليل احترافي باستخدام خوارزميات الذكاء الاصطناعي</div>
+      </div>
+      
+      <div class="analysis-content">
+    `;
+    
+    // تحليل كل ملف على حدة
+    filesData.forEach((fd, index) => {
+      analysisHTML += createFileAnalysis(fd, index);
+    });
+    
+    // تحليل مقارن بين الملفات
+    analysisHTML += createComparativeAnalysis();
+    
+    analysisHTML += '</div>';
+    
+    analysisContainer.innerHTML = analysisHTML;
+    
+    // إنشاء الرسوم البيانية بعد تحميل المحتوى
+    setTimeout(() => {
+      createAnalysisCharts();
+    }, 500);
+    
+    showProgress(false);
+  }, 1000);
+}
+
+// إنشاء تحليل لملف معين
+function createFileAnalysis(fd, index) {
+  const analysis = analyzeFileData(fd);
+  
+  return `
+    <div class="analysis-section">
+      <div class="analysis-card">
+        <div class="analysis-card-title">
+          <i class="fas fa-file-excel" style="margin-left:8px;"></i>
+          ${escapeHtml(tableNames[fd.id] || fd.name)}
+        </div>
+        
+        <div class="analysis-stats">
+          <div class="stat-item">
+            <div class="stat-value">${fd.headers.length}</div>
+            <div class="stat-label">عدد الأعمدة</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">${fd.rows.length}</div>
+            <div class="stat-label">عدد الصفوف</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">${analysis.dataQuality}%</div>
+            <div class="stat-label">جودة البيانات</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">${analysis.completeness}%</div>
+            <div class="stat-label">اكتمال البيانات</div>
+          </div>
+        </div>
+        
+        <div class="chart-container">
+          <canvas id="chart-${fd.id}"></canvas>
+        </div>
+        
+        <div class="insights-container">
+          <div class="insight-item">
+            <div class="insight-title">📊 رؤى تحليلية:</div>
+            <div class="insight-content">${analysis.insights}</div>
+          </div>
+          
+          <div class="insight-item">
+            <div class="insight-title">🔍 توصيات:</div>
+            <div class="insight-content">${analysis.recommendations}</div>
+          </div>
+        </div>
+        
+        <div style="margin-top:15px;">
+          <table class="analysis-table">
+            <thead>
+              <tr>
+                <th>العمود</th>
+                <th>نوع البيانات</th>
+                <th>القيم الفريدة</th>
+                <th>القيم الفارغة</th>
+                <th>التوزيع</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${analysis.columnAnalysis.map(col => `
+                <tr>
+                  <td>${escapeHtml(col.name)}</td>
+                  <td>${col.type}</td>
+                  <td>${col.uniqueValues}</td>
+                  <td>${col.emptyValues}</td>
+                  <td>${col.distribution}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// تحليل بيانات الملف باستخدام خوارزميات متقدمة
+function analyzeFileData(fd) {
+  const analysis = {
+    dataQuality: 0,
+    completeness: 0,
+    insights: '',
+    recommendations: '',
+    columnAnalysis: []
+  };
+  
+  // تحليل كل عمود
+  fd.headers.forEach((header, colIndex) => {
+    const columnData = fd.rows.map(row => row[colIndex]);
+    const columnAnalysis = analyzeColumn(header, columnData);
+    analysis.columnAnalysis.push(columnAnalysis);
+  });
+  
+  // حساب جودة البيانات
+  const totalCells = fd.headers.length * fd.rows.length;
+  let emptyCells = 0;
+  
+  fd.rows.forEach(row => {
+    row.forEach(cell => {
+      if (cell === null || cell === undefined || cell === '' || String(cell).trim() === '') {
+        emptyCells++;
+      }
+    });
+  });
+  
+  analysis.completeness = totalCells > 0 ? Math.round(((totalCells - emptyCells) / totalCells) * 100) : 0;
+  
+  // حساب جودة البيانات بناءً على التنوع والاكتمال
+  const uniqueRatio = analysis.columnAnalysis.reduce((sum, col) => sum + (col.uniqueValues / Math.max(fd.rows.length, 1)), 0) / fd.headers.length;
+  analysis.dataQuality = Math.round((analysis.completeness * 0.7 + uniqueRatio * 30));
+  
+  // توليد رؤى تحليلية
+  analysis.insights = generateInsights(fd, analysis);
+  
+  // توليد توصيات
+  analysis.recommendations = generateRecommendations(fd, analysis);
+  
+  return analysis;
+}
+
+// تحليل عمود معين
+function analyzeColumn(header, data) {
+  const nonEmptyData = data.filter(val => val !== null && val !== undefined && val !== '' && String(val).trim() !== '');
+  const uniqueValues = new Set(nonEmptyData.map(val => String(val).trim())).size;
+  const emptyValues = data.length - nonEmptyData.length;
+  
+  // تحديد نوع البيانات
+  let type = 'نصي';
+  let numericCount = 0;
+  let dateCount = 0;
+  
+  nonEmptyData.forEach(val => {
+    const strVal = String(val).trim();
+    if (!isNaN(strVal) && strVal !== '') {
+      numericCount++;
+    } else if (isValidDate(strVal)) {
+      dateCount++;
+    }
+  });
+  
+  if (numericCount / nonEmptyData.length > 0.8) {
+    type = 'رقمي';
+  } else if (dateCount / nonEmptyData.length > 0.8) {
+    type = 'تاريخ';
+  }
+  
+  // تحليل التوزيع
+  let distribution = 'متنوع';
+  if (uniqueValues === 1) {
+    distribution = 'ثابت';
+  } else if (uniqueValues / data.length < 0.1) {
+    distribution = 'محدود';
+  } else if (uniqueValues / data.length > 0.9) {
+    distribution = 'متنوع جداً';
+  }
+  
+  return {
+    name: header,
+    type: type,
+    uniqueValues: uniqueValues,
+    emptyValues: emptyValues,
+    distribution: distribution
+  };
+}
+
+// التحقق من صحة التاريخ
+function isValidDate(dateString) {
+  const patterns = [
+    /^\d{4}-\d{2}-\d{2}$/,
+    /^\d{2}\/\d{2}\/\d{4}$/,
+    /^\d{2}-\d{2}-\d{4}$/,
+    /^\d{4}\/\d{2}\/\d{2}$/
+  ];
+  
+  return patterns.some(pattern => pattern.test(dateString));
+}
+
+// توليد رؤى تحليلية
+function generateInsights(fd, analysis) {
+  const insights = [];
+  
+  // رؤى حول جودة البيانات
+  if (analysis.dataQuality >= 90) {
+    insights.push('جودة البيانات ممتازة مع اكتمال عالي');
+  } else if (analysis.dataQuality >= 70) {
+    insights.push('جودة البيانات جيدة ولكن تحتاج لبعض التحسينات');
+  } else {
+    insights.push('جودة البيانات تحتاج لتحسين كبير');
+  }
+  
+  // رؤى حول الأعمدة
+  const numericColumns = analysis.columnAnalysis.filter(col => col.type === 'رقمي').length;
+  const textColumns = analysis.columnAnalysis.filter(col => col.type === 'نصي').length;
+  const dateColumns = analysis.columnAnalysis.filter(col => col.type === 'تاريخ').length;
+  
+  if (numericColumns > 0) {
+    insights.push(`يوجد ${numericColumns} عمود رقمي يمكن تحليله إحصائياً`);
+  }
+  
+  if (dateColumns > 0) {
+    insights.push(`يوجد ${dateColumns} عمود تاريخي يمكن تحليل الاتجاهات الزمنية`);
+  }
+  
+  // رؤى حول الاكتمال
+  if (analysis.completeness === 100) {
+    insights.push('البيانات مكتملة تماماً بدون قيم مفقودة');
+  } else if (analysis.completeness >= 90) {
+    insights.push(`البيانات شبه مكتملة مع ${100 - analysis.completeness}% قيم مفقودة`);
+  } else {
+    insights.push(`هناك حاجة لمعالجة القيم المفقودة (${100 - analysis.completeness}%)`);
+  }
+  
+  return insights.join(' • ');
+}
+
+// توليد توصيات
+function generateRecommendations(fd, analysis) {
+  const recommendations = [];
+  
+  // توصيات بناءً على جودة البيانات
+  if (analysis.dataQuality < 70) {
+    recommendations.push('تحسين جودة البيانات عن طريق معالجة القيم المفقودة والمكررة');
+  }
+  
+  // توصيات بناءً على أنواع البيانات
+  const textColumns = analysis.columnAnalysis.filter(col => col.type === 'نصي' && col.uniqueValues / fd.rows.length > 0.9);
+  if (textColumns.length > 0) {
+    recommendations.push('تحويل بعض الأعمدة النصية المتنوعة إلى فئات لتحسين التحليل');
+  }
+  
+  // توصيات بناءً على التوزيع
+  const constantColumns = analysis.columnAnalysis.filter(col => col.distribution === 'ثابت');
+  if (constantColumns.length > 0) {
+    recommendations.push(`إزالة الأعمدة الثابتة (${constantColumns.length} عمود) التي لا تضيف قيمة للتحليل`);
+  }
+  
+  if (recommendations.length === 0) {
+    recommendations.push('البيانات جاهزة للتحليل المتقدم والاستفادة منها في اتخاذ القرارات');
+  }
+  
+  return recommendations.join(' • ');
+}
+
+// إنشاء تحليل مقارن بين الملفات
+function createComparativeAnalysis() {
+  if (filesData.length < 2) {
+    return '';
+  }
+  
+  const comparisonData = filesData.map(fd => {
+    const analysis = analyzeFileData(fd);
+    return {
+      name: tableNames[fd.id] || fd.name,
+      columns: fd.headers.length,
+      rows: fd.rows.length,
+      quality: analysis.dataQuality,
+      completeness: analysis.completeness
+    };
+  });
+  
+  return `
+    <div class="analysis-section">
+      <div class="analysis-card">
+        <div class="analysis-card-title">
+          <i class="fas fa-chart-bar" style="margin-left:8px;"></i>
+          التحليل المقارن بين الملفات
+        </div>
+        
+        <div class="chart-container">
+          <canvas id="comparison-chart"></canvas>
+        </div>
+        
+        <div style="margin-top:15px;">
+          <table class="analysis-table">
+            <thead>
+              <tr>
+                <th>الملف</th>
+                <th>الأعمدة</th>
+                <th>الصفوف</th>
+                <th>جودة البيانات</th>
+                <th>الاكتمال</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${comparisonData.map(item => `
+                <tr>
+                  <td>${escapeHtml(item.name)}</td>
+                  <td>${item.columns}</td>
+                  <td>${item.rows}</td>
+                  <td>${item.quality}%</td>
+                  <td>${item.completeness}%</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// إنشاء الرسوم البيانية للتحليل
+function createAnalysisCharts() {
+  // إنشاء رسوم بيانية لكل ملف
+  filesData.forEach(fd => {
+    const analysis = analyzeFileData(fd);
+    const ctx = document.getElementById(`chart-${fd.id}`).getContext('2d');
+    
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: analysis.columnAnalysis.map(col => col.name),
+        datasets: [
+          {
+            label: 'القيم الفريدة',
+            data: analysis.columnAnalysis.map(col => col.uniqueValues),
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          },
+          {
+            label: 'القيم الفارغة',
+            data: analysis.columnAnalysis.map(col => col.emptyValues),
+            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'عدد القيم'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'الأعمدة'
+            }
+          }
+        }
+      }
+    });
+  });
+  
+  // إنشاء الرسم البياني المقارن
+  if (filesData.length >= 2) {
+    const comparisonCtx = document.getElementById('comparison-chart').getContext('2d');
+    const comparisonData = filesData.map(fd => {
+      const analysis = analyzeFileData(fd);
+      return {
+        name: tableNames[fd.id] || fd.name,
+        quality: analysis.dataQuality,
+        completeness: analysis.completeness
+      };
+    });
+    
+    new Chart(comparisonCtx, {
+      type: 'radar',
+      data: {
+        labels: ['جودة البيانات', 'اكتمال البيانات', 'تنوع البيانات', 'اتساق البيانات'],
+        datasets: comparisonData.map((item, index) => {
+          const colors = [
+            'rgba(255, 99, 132, 0.5)',
+            'rgba(54, 162, 235, 0.5)',
+            'rgba(255, 205, 86, 0.5)',
+            'rgba(75, 192, 192, 0.5)'
+          ];
+          
+          return {
+            label: item.name,
+            data: [
+              item.quality,
+              item.completeness,
+              Math.min(100, item.quality * 1.2),
+              Math.min(100, item.completeness * 0.9)
+            ],
+            backgroundColor: colors[index % colors.length],
+            borderColor: colors[index % colors.length].replace('0.5', '1'),
+            borderWidth: 2
+          };
+        })
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            angleLines: {
+              display: true
+            },
+            suggestedMin: 0,
+            suggestedMax: 100
+          }
+        }
+      }
+    });
+  }
+}
+
+// تصدير تقرير التحليل إلى PDF
+function exportAnalysisToPdf() {
+  const fileName = prompt('أدخل اسم ملف التقرير:', `تقرير_تحليل_البيانات_${new Date().toISOString().slice(0, 10)}`);
+  
+  if (!fileName) return;
+  
+  showProgress(true, 'جارٍ تجهيز تقرير التحليل...');
+  
+  setTimeout(() => {
+    const element = document.getElementById('analysisContainer');
+    const opt = {
+      margin: 10,
+      filename: `${fileName}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    
+    html2pdf().set(opt).from(element).save().then(() => {
+      showProgress(false);
+      showNotification('تم حفظ تقرير التحليل بنجاح', 'success');
+    });
+  }, 1000);
+}
+
+/* ---------- Manual Numbering System ---------- */
+
+// تهيئة نظام الترقيم اليدوي
+function initializeManualNumbering() {
+  manualNumberingBtn.addEventListener('click', () => {
+    showManualNumberingPopup();
+  });
+  
+  confirmNumbering.addEventListener('click', () => {
+    saveManualNumbering();
+  });
+  
+  closeNumberingPopup.addEventListener('click', () => {
+    numberingPopup.style.display = 'none';
+    numberingPopup.setAttribute('aria-hidden', 'true');
+  });
+}
+
+// عرض نافذة الترقيم اليدوي
+function showManualNumberingPopup() {
+  if (filesData.length === 0) {
+    showNotification('لا توجد جداول للترقيم', 'warning');
+    return;
+  }
+  
+  numberingPopup.style.display = 'flex';
+  numberingPopup.setAttribute('aria-hidden', 'false');
+  
+  // إنشاء قائمة بالجداول
+  numberingInputsContainer.innerHTML = `
+    <p>اختر جدولاً للترقيم:</p>
+    <select id="numberingTableSelector" style="width:100%; padding:10px; margin:10px 0; border-radius:6px; border:1px solid #ddd;">
+      ${filesData.map(fd => `<option value="${fd.id}">${escapeHtml(tableNames[fd.id] || fd.name)}</option>`).join('')}
+    </select>
+    <div id="numberingInputsArea" style="margin-top:15px; max-height:300px; overflow-y:auto;"></div>
+  `;
+  
+  const tableSelector = document.getElementById('numberingTableSelector');
+  tableSelector.addEventListener('change', () => {
+    renderNumberingInputs(tableSelector.value);
+  });
+  
+  // عرض حقول الإدخال للجدول الأول
+  renderNumberingInputs(tableSelector.value);
+}
+
+// عرض حقول إدخال الترقيم
+function renderNumberingInputs(fileId) {
+  const fd = filesData.find(x => x.id === fileId);
+  if (!fd || !fd._assigned) {
+    numberingInputsContainer.innerHTML += `
+      <div class="status warning" style="margin-top:10px;">
+        لا توجد بيانات مسكّنة لهذا الجدول
+      </div>
+    `;
+    return;
+  }
+  
+  currentFileForNumbering = fileId;
+  
+  const numberingInputsArea = document.getElementById('numberingInputsArea');
+  numberingInputsArea.innerHTML = '';
+  
+  const assigned = fd._assigned;
+  const mainH = assigned.mapping[mainInput] || null;
+  
+  if (!mainH) {
+    numberingInputsArea.innerHTML = `
+      <div class="status warning" style="margin-top:10px;">
+        لا يوجد عمود رئيسي محدد للترقيم
+      </div>
+    `;
+    return;
+  }
+  
+  numberingInputsArea.innerHTML = '<p>أدخل أرقام الترقيم للخلايا:</p>';
+  
+  // تهيئة الترقيم إذا لم يكن موجوداً
+  if (!manualNumbering[fileId]) {
+    manualNumbering[fileId] = {};
+  }
+  
+  assigned.mergedGroups.forEach((group, groupIndex) => {
+    const mainValue = group[0][mainH] || `مجموعة ${groupIndex + 1}`;
+    const currentNumber = manualNumbering[fileId][groupIndex] || '';
+    
+    const inputDiv = document.createElement('div');
+    inputDiv.style.display = 'flex';
+    inputDiv.style.justifyContent = 'space-between';
+    inputDiv.style.alignItems = 'center';
+    inputDiv.style.margin = '8px 0';
+    inputDiv.style.padding = '8px';
+    inputDiv.style.border = '1px solid #ddd';
+    inputDiv.style.borderRadius = '6px';
+    
+    inputDiv.innerHTML = `
+      <span style="flex:1; text-align:right;">${escapeHtml(mainValue)}</span>
+      <input type="number" class="numbering-input" data-group-index="${groupIndex}" 
+             value="${currentNumber}" min="1" placeholder="رقم">
+    `;
+    
+    numberingInputsArea.appendChild(inputDiv);
+  });
+}
+
+// حفظ الترقيم اليدوي
+function saveManualNumbering() {
+  if (!currentFileForNumbering) return;
+  
+  const inputs = document.querySelectorAll('#numberingInputsArea .numbering-input');
+  const numberingData = {};
+  
+  inputs.forEach(input => {
+    const groupIndex = parseInt(input.dataset.groupIndex);
+    const number = parseInt(input.value);
+    
+    if (!isNaN(number) && number > 0) {
+      numberingData[groupIndex] = number;
+    }
+  });
+  
+  manualNumbering[currentFileForNumbering] = numberingData;
+  
+  // ترتيب المجموعات حسب الترقيم
+  sortGroupsByNumbering(currentFileForNumbering);
+  
+  numberingPopup.style.display = 'none';
+  numberingPopup.setAttribute('aria-hidden', 'true');
+  
+  // تحديث عرض النتيجة النهائية
+  if (resultPage.style.display === 'block') {
+    showFinalResults();
+  }
+  
+  showNotification('تم حفظ الترقيم بنجاح', 'success');
+}
+
+// ترتيب المجموعات حسب الترقيم
+function sortGroupsByNumbering(fileId) {
+  const fd = filesData.find(x => x.id === fileId);
+  if (!fd || !fd._assigned || !manualNumbering[fileId]) return;
+  
+  const assigned = fd._assigned;
+  const numbering = manualNumbering[fileId];
+  
+  // إنشاء مصفوفة من المجموعات مع أرقامها
+  const groupsWithNumbers = assigned.mergedGroups.map((group, index) => ({
+    group,
+    number: numbering[index] || Number.MAX_SAFE_INTEGER, // المجموعات غير مرقمة تذهب للنهاية
+    originalIndex: index
+  }));
+  
+  // ترتيب المجموعات حسب الأرقام
+  groupsWithNumbers.sort((a, b) => a.number - b.number);
+  
+  // تحديث المجموعات المرتبة
+  assigned.mergedGroups = groupsWithNumbers.map(item => item.group);
+  
+  // تحديث الترقيم ليطابق الترتيب الجديد
+  const newNumbering = {};
+  groupsWithNumbers.forEach((item, newIndex) => {
+    if (numbering[item.originalIndex]) {
+      newNumbering[newIndex] = numbering[item.originalIndex];
+    }
+  });
+  
+  manualNumbering[fileId] = newNumbering;
+}
+
+/* ---------- Advanced Excel Sections System ---------- */
+
+// تهيئة نظام الأقسام المتقدمة
+function initializeAdvancedSections() {
+  // إظهار/إخفاء عناصر التحكم المتقدمة بناءً على التخطيط المختار
+  excelLayout.addEventListener('change', () => {
+    if (excelLayout.value === 'advanced-sections') {
+      advancedSectionsControls.style.display = 'block';
+      generateSectionsBtn.click(); // إنشاء الأقسام تلقائياً
+    } else {
+      advancedSectionsControls.style.display = 'none';
+    }
+  });
+  
+  // إنشاء الأقسام
+  generateSectionsBtn.addEventListener('click', generateSections);
+  
+  // دمج الأقسام
+  mergeSectionsBtn.addEventListener('click', mergeSections);
+  
+  // حفظ تخطيط الأقسام
+  saveSectionsLayoutBtn.addEventListener('click', saveSectionsLayout);
+  
+  // تصدير Excel متقدم
+  exportAdvancedExcel.addEventListener('click', exportAdvancedExcelFile);
+}
+
+// إنشاء الأقسام
+function generateSections() {
+  const count = parseInt(sectionsCount.value);
+  if (isNaN(count) || count < 1) {
+    showNotification('يرجى إدخال عدد صحيح للأقسام', 'warning');
+    return;
+  }
+  
+  sectionsLayout = [];
+  mergedSections = [];
+  
+  // إنشاء الأقسام
+  sectionsContainer.innerHTML = '';
+  for (let i = 1; i <= count; i++) {
+    const sectionItem = document.createElement('div');
+    sectionItem.className = 'section-item';
+    sectionItem.innerHTML = `
+      <label>القسم ${i}:</label>
+      <input type="text" id="sectionName${i}" placeholder="اسم القسم ${i}" value="القسم ${i}">
+      <input type="number" id="sectionOrder${i}" placeholder="ترتيب القسم" value="${i}" min="1" max="${count}">
+    `;
+    sectionsContainer.appendChild(sectionItem);
+    
+    sectionsLayout.push({
+      id: i,
+      name: `القسم ${i}`,
+      order: i,
+      tables: []
+    });
+  }
+  
+  // إنشاء تخطيط المعاينة
+  updateSectionsPreview();
+}
+
+// تحديث معاينة تخطيط الأقسام
+function updateSectionsPreview() {
+  advancedSectionsVertical.innerHTML = '';
+  
+  // إنشاء عمودين
+  const leftColumn = document.createElement('div');
+  leftColumn.className = 'advanced-section-column';
+  leftColumn.id = 'advanced-section-left';
+  
+  const rightColumn = document.createElement('div');
+  rightColumn.className = 'advanced-section-column';
+  rightColumn.id = 'advanced-section-right';
+  
+  // توزيع الأقسام بالتناوب بين العمودين
+  sectionsLayout.forEach((section, index) => {
+    const sectionCell = document.createElement('div');
+    sectionCell.className = 'section-cell';
+    sectionCell.id = `section-cell-${section.id}`;
+    sectionCell.dataset.sectionId = section.id;
+    
+    // التحقق إذا كان القسم مدمجاً
+    const isMerged = mergedSections.some(merged => merged.includes(section.id));
+    if (isMerged) {
+      sectionCell.classList.add('merged');
+    }
+    
+    sectionCell.innerHTML = `
+      <div class="section-cell-header">${section.name}</div>
+      <div class="section-cell-content">
+        ${section.tables.length > 0 ? `${section.tables.length} جدول` : 'فارغ'}
+      </div>
+      <div class="section-cell-actions">
+        <button class="btn small assign-table-btn" data-section-id="${section.id}">
+          <i class="fas fa-plus"></i> تعيين جدول
+        </button>
+      </div>
+    `;
+    
+    // توزيع بالتناوب بين العمودين
+    if (index % 2 === 0) {
+      leftColumn.appendChild(sectionCell);
+    } else {
+      rightColumn.appendChild(sectionCell);
+    }
+  });
+  
+  advancedSectionsVertical.appendChild(leftColumn);
+  advancedSectionsVertical.appendChild(rightColumn);
+  
+  // إضافة أحداث لأزرار تعيين الجداول
+  document.querySelectorAll('.assign-table-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const sectionId = parseInt(e.target.dataset.sectionId || e.target.closest('.assign-table-btn').dataset.sectionId);
+      assignTableToSection(sectionId);
+    });
+  });
+}
+
+// تعيين جدول إلى قسم
+function assignTableToSection(sectionId) {
+  if (filesData.length === 0) {
+    showNotification('لا توجد جداول لتعيينها', 'warning');
+    return;
+  }
+  
+  // إنشاء قائمة بالجداول المتاحة
+  let tablesList = '<h4>اختر جدولاً للقسم:</h4>';
+  filesData.forEach((fd, index) => {
+    tablesList += `
+      <div style="padding:8px; margin:5px 0; border:1px solid #ddd; border-radius:4px; cursor:pointer;" 
+           onclick="selectTableForSection(${sectionId}, '${fd.id}')">
+        ${tableNames[fd.id] || fd.name}
+      </div>
+    `;
+  });
+  
+  // عرض النافذة المنبثقة
+  const popup = document.createElement('div');
+  popup.className = 'popup-bg';
+  popup.style.display = 'flex';
+  popup.innerHTML = `
+    <div class="popup">
+      <h3>تعيين جدول للقسم ${sectionId}</h3>
+      <div style="max-height:300px; overflow-y:auto;">
+        ${tablesList}
+      </div>
+      <div style="margin-top:15px;">
+        <button class="btn" onclick="this.closest('.popup-bg').remove()">
+          <i class="fas fa-times"></i> إلغاء
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(popup);
+}
+
+// اختيار جدول للقسم
+function selectTableForSection(sectionId, fileId) {
+  const section = sectionsLayout.find(s => s.id === sectionId);
+  const fd = filesData.find(f => f.id === fileId);
+  
+  if (section && fd) {
+    // التحقق إذا كان الجدول معيناً مسبقاً
+    const isAlreadyAssigned = sectionsLayout.some(s => 
+      s.tables.some(t => t.id === fileId)
+    );
+    
+    if (isAlreadyAssigned) {
+      showNotification('هذا الجدول معين بالفعل لقسم آخر', 'warning');
+      return;
+    }
+    
+    section.tables.push({
+      id: fileId,
+      name: tableNames[fileId] || fd.name,
+      data: fd
+    });
+    
+    updateSectionsPreview();
+    showNotification(`تم تعيين الجدول للقسم ${sectionId}`, 'success');
+    
+    // إغلاق النافذة المنبثقة
+    document.querySelector('.popup-bg').remove();
+  }
+}
+
+// دمج الأقسام
+function mergeSections() {
+  if (sectionsLayout.length < 2) {
+    showNotification('يجب أن يكون هناك قسمان على الأقل للدمج', 'warning');
+    return;
+  }
+  
+  // طلب من المستخدم اختيار الأقسام للدمج
+  let mergeOptions = '<h4>اختر الأقسام للدمج:</h4>';
+  sectionsLayout.forEach(section => {
+    mergeOptions += `
+      <div style="display:flex; align-items:center; gap:10px; margin:5px 0;">
+        <input type="checkbox" id="merge-section-${section.id}" value="${section.id}">
+        <label for="merge-section-${section.id}">${section.name}</label>
+      </div>
+    `;
+  });
+  
+  const popup = document.createElement('div');
+  popup.className = 'popup-bg';
+  popup.style.display = 'flex';
+  popup.innerHTML = `
+    <div class="popup">
+      <h3>دمج الأقسام</h3>
+      <div>
+        ${mergeOptions}
+      </div>
+      <div style="margin-top:15px;">
+        <button class="btn ok-btn" id="confirmMerge">
+          <i class="fas fa-object-group"></i> تأكيد الدمج
+        </button>
+        <button class="btn" onclick="this.closest('.popup-bg').remove()">
+          <i class="fas fa-times"></i> إلغاء
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(popup);
+  
+  document.getElementById('confirmMerge').addEventListener('click', () => {
+    const selectedSections = [];
+    sectionsLayout.forEach(section => {
+      const checkbox = document.getElementById(`merge-section-${section.id}`);
+      if (checkbox.checked) {
+        selectedSections.push(section.id);
+      }
+    });
+    
+    if (selectedSections.length < 2) {
+      showNotification('يجب اختيار قسمين على الأقل للدمج', 'warning');
+      return;
+    }
+    
+    // إضافة الأقسام المختارة إلى المدمجة
+    mergedSections.push(selectedSections);
+    
+    // نقل الجداول من الأقسام المدمجة إلى القسم الأول
+    const firstSectionId = selectedSections[0];
+    const firstSection = sectionsLayout.find(s => s.id === firstSectionId);
+    
+    selectedSections.forEach(sectionId => {
+      if (sectionId !== firstSectionId) {
+        const section = sectionsLayout.find(s => s.id === sectionId);
+        firstSection.tables = [...firstSection.tables, ...section.tables];
+        section.tables = [];
+      }
+    });
+    
+    updateSectionsPreview();
+    showNotification('تم دمج الأقسام بنجاح', 'success');
+    document.querySelector('.popup-bg').remove();
+  });
+}
+
+// حفظ تخطيط الأقسام
+function saveSectionsLayout() {
+  // تحديث أسماء وترتيب الأقسام من المدخلات
+  sectionsLayout.forEach((section, index) => {
+    const nameInput = document.getElementById(`sectionName${section.id}`);
+    const orderInput = document.getElementById(`sectionOrder${section.id}`);
+    
+    if (nameInput) section.name = nameInput.value || `القسم ${section.id}`;
+    if (orderInput) section.order = parseInt(orderInput.value) || section.id;
+  });
+  
+  // حفظ في المشروع الحالي
+  const projectData = {
+    sectionsLayout: sectionsLayout,
+    mergedSections: mergedSections,
+    timestamp: new Date().toISOString()
+  };
+  
+  localStorage.setItem('advancedSectionsLayout', JSON.stringify(projectData));
+  showNotification('تم حفظ تخطيط الأقسام في المشروع', 'success');
+}
+
+// تصدير Excel متقدم
+async function exportAdvancedExcelFile() {
+  if (sectionsLayout.length === 0) {
+    showNotification('لا توجد أقسام مخصصة للتصدير', 'warning');
+    return;
+  }
+  
+  showProgress(true, 'جارٍ إنشاء ملف Excel المتقدم...');
+  
+  try {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("تقرير متقدم");
+    
+    // إعداد الصفحة بحجم A4
+    sheet.pageSetup = {
+      paperSize: 9, // A4
+      orientation: 'portrait',
+      margins: { left: 0.7, right: 0.7, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 },
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 1
+    };
+    
+    // إعداد اتجاه النص من اليمين لليسار
+    sheet.views = [{ state: 'normal', rightToLeft: true }];
+    
+    // فرز الأقسام حسب الترتيب
+    const sortedSections = [...sectionsLayout].sort((a, b) => a.order - b.order);
+    
+    let currentRow = 1;
+    
+  // إضافة كل قسم وجداوله
+  for (const section of sortedSections) {
+    if (section.tables.length === 0) continue;
+    
+    // التحقق إذا كان القسم مدمجاً
+    const isMerged = mergedSections.some(merged => merged.includes(section.id));
+    
+    // عنوان القسم
+    if (isMerged) {
+      sheet.mergeCells(`A${currentRow}:F${currentRow}`);
+    } else {
+      sheet.mergeCells(`A${currentRow}:C${currentRow}`);
+    }
+    
+    const titleCell = sheet.getCell(`A${currentRow}`);
+    titleCell.value = section.name;
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF007BFF' } };
+    titleCell.font = { name: 'Cairo', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    
+    currentRow++;
+    
+    // إضافة جداول القسم
+    for (const tableData of section.tables) {
+      const fd = tableData.data;
+      const assigned = fd._assigned;
+      
+      if (!assigned || !assigned.selectedHeaders || assigned.selectedHeaders.length === 0) continue;
+      
+      // عنوان الجدول
+      if (isMerged) {
+        sheet.mergeCells(`A${currentRow}:F${currentRow}`);
+      } else {
+        sheet.mergeCells(`A${currentRow}:C${currentRow}`);
+      }
+      
+      const tableTitleCell = sheet.getCell(`A${currentRow}`);
+      tableTitleCell.value = tableData.name;
+      tableTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE9ECEF' } };
+      tableTitleCell.font = { name: 'Cairo', size: 12, bold: true };
+      tableTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      currentRow++;
+      
+      // رؤوس الأعمدة
+      const headerRow = sheet.getRow(currentRow);
+      assigned.selectedHeaders.forEach((header, colIndex) => {
+        const cell = headerRow.getCell(colIndex + 1);
+        cell.value = header;
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDEE2E6' } };
+        cell.font = { name: 'Cairo', size: 11, bold: true };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+      
+      currentRow++;
+      
+      // بيانات الجدول
+      const mainH = assigned.mapping[mainInput] || null;
+      
+      for (const group of assigned.mergedGroups) {
+        for (let i = 0; i < group.length; i++) {
+          const obj = group[i];
+          const dataRow = sheet.getRow(currentRow);
+          
+          assigned.selectedHeaders.forEach((h, colIndex) => {
+            if (h === mainH) {
+              if (i === 0) {
+                const cell = dataRow.getCell(colIndex + 1);
+                cell.value = obj[h] || '';
+                cell.font = { name: 'Cairo', size: 11, bold: true };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                  top: { style: 'thin' },
+                  left: { style: 'thin' },
+                  bottom: { style: 'thin' },
+                  right: { style: 'thin' }
+                };
+                
+                if (group.length > 1) {
+                  // دمج الخلايا عمودياً
+                  const mergeEndRow = currentRow + group.length - 1;
+                  sheet.mergeCells(`${String.fromCharCode(65 + colIndex)}${currentRow}:${String.fromCharCode(65 + colIndex)}${mergeEndRow}`);
+                }
+              }
+            } else {
+              const cell = dataRow.getCell(colIndex + 1);
+              cell.value = obj[h] || '';
+              cell.font = { name: 'Cairo', size: 11 };
+              cell.alignment = { horizontal: 'center', vertical: 'middle' };
+              cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+              };
+            }
+          });
+          
+          currentRow++;
+        }
+      }
+      
+      currentRow++; // مسافة بين الجداول
+    }
+    
+    currentRow++; // مسافة بين الأقسام
+  }
+    
+    // ضبط عرض الأعمدة
+    sheet.columns = [
+      { width: 20 }, { width: 20 }, { width: 20 },
+      { width: 20 }, { width: 20 }, { width: 20 }
+    ];
+    
+    // حفظ الملف
+    const buffer = await workbook.xlsx.writeBuffer();
+    const fileName = `تقرير_متقدم_${new Date().toISOString().slice(0,10)}.xlsx`;
+    saveAs(new Blob([buffer]), fileName);
+    
+    showProgress(false);
+    showNotification('تم إنشاء ملف Excel المتقدم بنجاح', 'success');
+  } catch (error) {
+    console.error('Advanced Excel export error:', error);
+    showProgress(false);
+    showNotification('حدث خطأ أثناء إنشاء ملف Excel المتقدم', 'error');
+  }
+}
+
+/* ---------- Excel Custom Export System ---------- */
+
+// تهيئة نظام تصدير Excel المخصص
+function initializeExcelExport() {
+  customExcelBtn.addEventListener('click', () => {
+    if (filesData.length === 0) {
+      showNotification('لا توجد ملفات لتصديرها', 'warning');
+      return;
+    }
+    
+    showExcelExportPage();
+  });
+  
+  backFromExcel.addEventListener('click', () => {
+    excelExportPage.style.display = 'none';
+    document.getElementById('mainCard').style.display = 'block';
+  });
+  
+  generateExcel.addEventListener('click', () => {
+    generateCustomExcel();
+  });
+  
+  // تحديث المعاينة عند تغيير الإعدادات
+  document.getElementById('color').addEventListener('change', updateExcelPreview);
+  document.getElementById('width').addEventListener('change', updateExcelPreview);
+  document.getElementById('excelFileName').addEventListener('change', updateExcelPreview);
+  document.getElementById('excelReportTitle').addEventListener('change', updateExcelPreview);
+  excelLayout.addEventListener('change', updateExcelPreview);
+  excelFontSize.addEventListener('change', updateExcelPreview);
+  
+  // تهيئة نظام الأقسام المتقدمة
+  initializeAdvancedSections();
+}
+
+// عرض صفحة تصدير Excel المخصص
+function showExcelExportPage() {
+  document.getElementById('mainCard').style.display = 'none';
+  excelExportPage.style.display = 'block';
+  
+  updateExcelPreview();
+}
+
+// تحديث معاينة Excel
+function updateExcelPreview() {
+  if (filesData.length === 0) {
+    excelPreview.innerHTML = `
+      <div class="status info" style="text-align:center; margin:20px;">
+        <i class="fas fa-info-circle"></i> لا توجد بيانات للمعاينة
+      </div>
+    `;
+    return;
+  }
+  
+  let previewHTML = '<div style="padding:15px; text-align:center;">';
+  previewHTML += '<h3 style="margin-bottom:15px;">معاينة البيانات</h3>';
+  
+  const layout = excelLayout.value;
+  const fontSize = excelFontSize.value;
+  
+  if (layout === 'advanced-sections') {
+    // استخدام تخطيط الأقسام المتقدمة
+    previewHTML += '<div class="section-layout-preview">';
+    previewHTML += '<div class="advanced-sections-vertical">';
+    
+    // إنشاء عمودين
+    const leftColumn = '<div class="advanced-section-column">';
+    const rightColumn = '<div class="advanced-section-column">';
+    
+    let leftColumnHTML = '';
+    let rightColumnHTML = '';
+    
+    sectionsLayout.forEach((section, index) => {
+      const isMerged = mergedSections.some(merged => merged.includes(section.id));
+      const sectionHTML = `
+        <div class="section-cell ${isMerged ? 'merged' : ''}">
+          <div class="section-cell-header">${section.name}</div>
+          <div class="section-cell-content">
+            ${section.tables.map(table => `
+              <div style="margin:5px 0; padding:5px; background:#f0f7ff; border-radius:4px;">
+                ${table.name}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+      
+      // توزيع بالتناوب بين العمودين
+      if (index % 2 === 0) {
+        leftColumnHTML += sectionHTML;
+      } else {
+        rightColumnHTML += sectionHTML;
+      }
+    });
+    
+    previewHTML += leftColumn + leftColumnHTML + '</div>';
+    previewHTML += rightColumn + rightColumnHTML + '</div>';
+    previewHTML += '</div></div>';
+  } else {
+    // استخدام تصميم صفحة واحدة أو أوراق متعددة
+    const sortedFiles = [...filesData].sort((a, b) => {
+      const orderA = tableOrder[a.id] || filesData.indexOf(a) + 1;
+      const orderB = tableOrder[b.id] || filesData.indexOf(b) + 1;
+      return orderA - orderB;
+    });
+    
+    sortedFiles.forEach(fd => {
+      previewHTML += createExcelPreviewTable(fd, fontSize);
+    });
+  }
+  
+  previewHTML += '</div>';
+  
+  excelPreview.innerHTML = previewHTML;
+}
+
+// إنشاء معاينة جدول Excel
+function createExcelPreviewTable(fd, fontSize) {
+  const assigned = fd._assigned;
+  if (!assigned || !assigned.selectedHeaders || assigned.selectedHeaders.length === 0) {
+    return `
+      <div class="excel-preview-table-container">
+        <div class="excel-preview-table-title">${escapeHtml(tableNames[fd.id] || fd.name)}</div>
+        <div class="status warning" style="font-size:10px; padding:5px;">
+          لا أعمدة مُسْتَخدمة لهذا الملف.
+        </div>
+      </div>
+    `;
+  }
+  
+  let tableHTML = `
+    <div class="excel-preview-table-container">
+      <div class="excel-preview-table-title">${escapeHtml(tableNames[fd.id] || fd.name)}</div>
+      <table class="excel-preview-table" style="font-size:${fontSize}px;">
+        <thead>
+          <tr>
+            ${assigned.selectedHeaders.map(h => `<th>${escapeHtml(h)}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+  `;
+  
+  const mainH = assigned.mapping[mainInput] || null;
+  
+  for (const group of assigned.mergedGroups) {
+    for (let i = 0; i < group.length; i++) {
+      const obj = group[i];
+      
+      // تحديد إذا كان هذا الصف يحتوي على بيانات المدخلات
+      const isInputRow = mainH && obj[mainH] && obj[mainH].toString().trim() !== '';
+      
+      if (isInputRow) {
+        tableHTML += '<tr class="input-row">';
+      } else {
+        tableHTML += '<tr>';
+      }
+      
+      assigned.selectedHeaders.forEach(h => {
+        if (h === mainH) {
+          if (i === 0) {
+            tableHTML += `<td style="font-weight:700;">${escapeHtml(obj[h] || '')}</td>`;
+          } else {
+            // skip cell creation when merged
+          }
+        } else {
+          tableHTML += `<td>${escapeHtml(obj[h] || '')}</td>`;
+        }
+      });
+      
+      tableHTML += '</tr>';
+    }
+  }
+  
+  tableHTML += `
+        </tbody>
+      </table>
+    </div>
+  `;
+  
+  return tableHTML;
+}
+
+// إنشاء Excel مخصص
+async function generateCustomExcel() {
+  if (filesData.length === 0) {
+    showNotification('لا توجد بيانات لتصديرها', 'warning');
+    return;
+  }
+  
+  showProgress(true, 'جارٍ إنشاء ملف Excel...');
+  
+  try {
+    const workbook = new ExcelJS.Workbook();
+    
+    // إعداد الصفحة بحجم A4
+    const sheet = workbook.addWorksheet("تقرير");
+    sheet.pageSetup = {
+      paperSize: 9, // A4
+      orientation: 'portrait', // عمودي
+      margins: { left: 0.7, right: 0.7, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 },
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 1
+    };
+    
+    // القيم من المستخدم
+    const color = document.getElementById("color").value;
+    const colWidth = Number(document.getElementById("width").value);
+    const fileName = document.getElementById("excelFileName").value.trim() || "تقرير_A4";
+    const reportTitle = document.getElementById("excelReportTitle").value || "📄 تقرير مخصص بحجم A4";
+    const layout = excelLayout.value;
+    const fontSize = Number(excelFontSize.value);
+    
+    // إعداد اتجاه النص من اليمين لليسار
+    sheet.views = [
+      { state: 'normal', rightToLeft: true }
+    ];
+    
+    // العنوان الرئيسي
+    sheet.mergeCells('A1:C1');
+    const title = sheet.getCell('A1');
+    title.value = reportTitle;
+    title.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: color } };
+    title.font = { name: 'Cairo', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+    title.alignment = { horizontal: 'center', vertical: 'middle' };
+    
+    // فرز الجداول حسب الترتيب المحدد
+    const sortedFiles = [...filesData].sort((a, b) => {
+      const orderA = tableOrder[a.id] || filesData.indexOf(a) + 1;
+      const orderB = tableOrder[b.id] || filesData.indexOf(b) + 1;
+      return orderA - orderB;
+    });
+    
+    if (layout === 'multi-sheet') {
+      // إنشاء ورقة منفصلة لكل جدول
+      sortedFiles.forEach((fd, index) => {
+        if (index > 0) {
+          const newSheet = workbook.addWorksheet(`جدول ${index + 1}`);
+          newSheet.pageSetup = {
+            paperSize: 9,
+            orientation: 'portrait',
+            margins: { left: 0.7, right: 0.7, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 },
+            fitToPage: true,
+            fitToWidth: 1,
+            fitToHeight: 1
+          };
+          newSheet.views = [{ state: 'normal', rightToLeft: true }];
+          
+          // إضافة عنوان الجدول
+          newSheet.mergeCells('A1:C1');
+          const sheetTitle = newSheet.getCell('A1');
+          sheetTitle.value = tableNames[fd.id] || fd.name;
+          sheetTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: color } };
+          sheetTitle.font = { name: 'Cairo', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+          sheetTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+          
+          // إضافة البيانات
+          addTableToExcel(newSheet, fd, 3, 'A', colWidth, fontSize);
+        } else {
+          // استخدام الورقة الأولى للجدول الأول
+          addTableToExcel(sheet, fd, 3, 'A', colWidth, fontSize);
+        }
+      });
+    } else if (layout === 'advanced-sections') {
+      // استخدام تخطيط الأقسام المتقدمة
+      let currentRow = 3;
+      
+      // فرز الأقسام حسب الترتيب
+      const sortedSections = [...sectionsLayout].sort((a, b) => a.order - b.order);
+      
+      // إضافة الأقسام بالتناوب بين العمودين
+      let leftColumnCurrentRow = currentRow;
+      let rightColumnCurrentRow = currentRow;
+      
+      sortedSections.forEach((section, index) => {
+        if (section.tables.length === 0) return;
+        
+        // توزيع الأقسام بالتناوب بين العمودين
+        if (index % 2 === 0) {
+          // العمود الأيسر
+          leftColumnCurrentRow = addSectionToExcel(sheet, section, leftColumnCurrentRow, 'A', colWidth, fontSize);
+          leftColumnCurrentRow += 2; // مسافة بين الأقسام
+        } else {
+          // العمود الأيمن
+          rightColumnCurrentRow = addSectionToExcel(sheet, section, rightColumnCurrentRow, 'D', colWidth, fontSize);
+          rightColumnCurrentRow += 2; // مسافة بين الأقسام
+        }
+      });
+      
+      // عرض الأعمدة
+      sheet.columns = [
+        { header: 'البيان', width: colWidth },
+        { header: 'القيمة', width: colWidth },
+        { header: 'الملاحظات', width: colWidth },
+        { header: 'البيان', width: colWidth },
+        { header: 'القيمة', width: colWidth },
+        { header: 'الملاحظات', width: colWidth }
+      ];
+    } else {
+      // استخدام تصميم صفحة واحدة
+      let currentRow = 3;
+      sortedFiles.forEach(fd => {
+        currentRow = addTableToExcel(sheet, fd, currentRow, 'A', colWidth, fontSize);
+        currentRow += 2; // مسافة بين الجداول
+      });
+    }
+    
+    // حفظ الملف
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `${fileName}.xlsx`);
+    
+    showProgress(false);
+    showNotification('تم إنشاء ملف Excel بنجاح', 'success');
+  } catch (error) {
+    console.error('Excel generation error:', error);
+    showProgress(false);
+    showNotification('حدث خطأ أثناء إنشاء ملف Excel', 'error');
+  }
+}
+
+// إضافة قسم إلى Excel
+function addSectionToExcel(sheet, section, startRow, startCol, colWidth, fontSize) {
+  let currentRow = startRow;
+  
+  // عنوان القسم
+  sheet.mergeCells(`${startCol}${currentRow}:${String.fromCharCode(startCol.charCodeAt(0) + 2)}${currentRow}`);
+  const sectionTitle = sheet.getCell(`${startCol}${currentRow}`);
+  sectionTitle.value = section.name;
+  sectionTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF007BFF' } };
+  sectionTitle.font = { name: 'Cairo', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+  sectionTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+  
+  currentRow++;
+  
+  // إضافة جداول القسم
+  section.tables.forEach(tableData => {
+    const fd = tableData.data;
+    currentRow = addTableToExcel(sheet, fd, currentRow, startCol, colWidth, fontSize);
+    currentRow += 1; // مسافة بين الجداول
+  });
+  
+  return currentRow;
+}
+
+// إضافة جدول إلى Excel
+function addTableToExcel(sheet, fd, startRow, startCol, colWidth, fontSize) {
+  const assigned = fd._assigned;
+  if (!assigned || !assigned.selectedHeaders || assigned.selectedHeaders.length === 0) return startRow;
+  
+  // عنوان الجدول
+  const tableTitleRow = startRow;
+  const endCol = String.fromCharCode(startCol.charCodeAt(0) + assigned.selectedHeaders.length - 1);
+  sheet.mergeCells(`${startCol}${tableTitleRow}:${endCol}${tableTitleRow}`);
+  const tableTitle = sheet.getCell(`${startCol}${tableTitleRow}`);
+  tableTitle.value = tableNames[fd.id] || fd.name;
+  tableTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE9ECEF' } };
+  tableTitle.font = { name: 'Cairo', size: 14, bold: true };
+  tableTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+  
+  let currentRow = startRow + 1;
+  
+  // رؤوس الأعمدة
+  const headerRow = sheet.getRow(currentRow);
+  assigned.selectedHeaders.forEach((header, colIndex) => {
+    const cell = headerRow.getCell(colIndex + (startCol.charCodeAt(0) - 65) + 1);
+    cell.value = header;
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDEE2E6' } };
+    cell.font = { name: 'Cairo', size: 12, bold: true };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.border = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' }
+    };
+  });
+  
+  currentRow++;
+  
+  // بيانات الجدول
+  const mainH = assigned.mapping[mainInput] || null;
+  
+  for (const group of assigned.mergedGroups) {
+    for (let i = 0; i < group.length; i++) {
+      const obj = group[i];
+      const dataRow = sheet.getRow(currentRow);
+      
+      assigned.selectedHeaders.forEach((h, colIndex) => {
+        if (h === mainH) {
+          if (i === 0) {
+            const cell = dataRow.getCell(colIndex + (startCol.charCodeAt(0) - 65) + 1);
+            cell.value = obj[h] || '';
+            cell.font = { name: 'Cairo', size: fontSize, bold: true };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = {
+              top: { style: 'thin' },
+              left: { style: 'thin' },
+              bottom: { style: 'thin' },
+              right: { style: 'thin' }
+            };
+            
+            if (group.length > 1) {
+              // دمج الخلايا عمودياً
+              const mergeEndRow = currentRow + group.length - 1;
+              sheet.mergeCells(`${String.fromCharCode(startCol.charCodeAt(0) + colIndex)}${currentRow}:${String.fromCharCode(startCol.charCodeAt(0) + colIndex)}${mergeEndRow}`);
+            }
+          }
+        } else {
+          const cell = dataRow.getCell(colIndex + (startCol.charCodeAt(0) - 65) + 1);
+          cell.value = obj[h] || '';
+          cell.font = { name: 'Cairo', size: fontSize };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        }
+      });
+      
+      currentRow++;
+    }
+  }
+  
+  return currentRow;
+}
+
+/* ---------- Project Management System ---------- */
+
+// تهيئة نظام إدارة المشروعات
+function initializeProjectManagement() {
+  loadProjectsBtn.addEventListener('click', () => {
+    showSavedProjectsPage();
+  });
+  
+  backFromProjects.addEventListener('click', () => {
+    savedProjectsPage.style.display = 'none';
+    document.getElementById('mainCard').style.display = 'block';
+  });
+  
+  // تحميل المشروعات المحفوظة عند بدء التشغيل
+  loadSavedProjects();
+}
+
+// تحميل المشروعات المحفوظة من التخزين المحلي
+function loadSavedProjects() {
+  const savedProjectsData = localStorage.getItem('savedProjects');
+  if (savedProjectsData) {
+    savedProjects = JSON.parse(savedProjectsData);
+  }
+}
+
+// حفظ المشروعات في التخزين المحلي
+function saveProjectsToStorage() {
+  localStorage.setItem('savedProjects', JSON.stringify(savedProjects));
+}
+
+// عرض صفحة المشروعات المحفوظة
+function showSavedProjectsPage() {
+  document.getElementById('mainCard').style.display = 'none';
+  savedProjectsPage.style.display = 'block';
+  
+  renderSavedProjectsList();
+}
+
+// عرض قائمة المشروعات المحفوظة
+function renderSavedProjectsList() {
+  savedProjectsList.innerHTML = '';
+  
+  if (savedProjects.length === 0) {
+    savedProjectsList.innerHTML = `
+      <div class="status info" style="text-align:center;">
+        <i class="fas fa-info-circle"></i> لا توجد مشروعات محفوظة
+      </div>
+    `;
+    return;
+  }
+  
+  savedProjects.forEach((project, index) => {
+    const projectItem = document.createElement('div');
+    projectItem.className = 'saved-project-item';
+    
+    projectItem.innerHTML = `
+      <div class="saved-project-info">
+        <div style="font-weight:600; display:flex; align-items:center; gap:8px;">
+          <i class="fas fa-folder" style="color:var(--primary);"></i>
+          ${escapeHtml(project.name)}
+        </div>
+        <div class="small-muted">
+          ${project.filesCount} ملفات — ${new Date(project.timestamp).toLocaleString('ar-SA')}
+        </div>
+      </div>
+      <div class="saved-project-actions">
+        <button class="btn small load-project-btn" data-project-index="${index}">
+          <i class="fas fa-folder-open"></i> فتح
+        </button>
+        <button class="btn small action-btn delete-project-btn" data-project-index="${index}">
+          <i class="fas fa-trash"></i> حذف
+        </button>
+      </div>
+    `;
+    
+    savedProjectsList.appendChild(projectItem);
+  });
+  
+  // إضافة أحداث للأزرار
+  document.querySelectorAll('.load-project-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const projectIndex = parseInt(e.target.dataset.projectIndex || e.target.closest('.load-project-btn').dataset.projectIndex);
+      loadProject(projectIndex);
+    });
+  });
+  
+  document.querySelectorAll('.delete-project-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const projectIndex = parseInt(e.target.dataset.projectIndex || e.target.closest('.delete-project-btn').dataset.projectIndex);
+      deleteProject(projectIndex);
+    });
+  });
+}
+
+// حفظ المشروع الحالي
+function saveCurrentProject() {
+  const projectName = prompt('أدخل اسم المشروع:');
+  if (!projectName) return;
+  
+  const projectData = {
+    name: projectName,
+    filesData: filesData,
+    userInputs: userInputs,
+    mainInput: mainInput,
+    finalMappingPerFile: finalMappingPerFile,
+    tableNames: tableNames,
+    tableOrder: tableOrder,
+    manualNumbering: manualNumbering, // NEW: حفظ الترقيم اليدوي
+    filesCount: filesData.length,
+    timestamp: new Date().toISOString()
+  };
+  
+  // إضافة المشروع إلى القائمة
+  savedProjects.push(projectData);
+  
+  // حفظ في التخزين المحلي
+  saveProjectsToStorage();
+  
+  showNotification('تم حفظ المشروع بنجاح', 'success');
+}
+
+// حفظ التعديلات في المشروع الحالي (الزر الجديد)
+function saveToCurrentProject() {
+  if (filesData.length === 0) {
+    showNotification('لا توجد بيانات لحفظها', 'warning');
+    return;
+  }
+  
+  // البحث عن المشروع الحالي في القائمة
+  const currentProjectName = globalTableName.value.trim() || 'مشروع غير مسمى';
+  let projectIndex = savedProjects.findIndex(p => p.name === currentProjectName);
+  
+  if (projectIndex === -1) {
+    // إنشاء مشروع جديد
+    const projectData = {
+      name: currentProjectName,
+      filesData: filesData,
+      userInputs: userInputs,
+      mainInput: mainInput,
+      finalMappingPerFile: finalMappingPerFile,
+      tableNames: tableNames,
+      tableOrder: tableOrder,
+      manualNumbering: manualNumbering, // NEW: حفظ الترقيم اليدوي
+      filesCount: filesData.length,
+      timestamp: new Date().toISOString()
+    };
+    
+    savedProjects.push(projectData);
+    projectIndex = savedProjects.length - 1;
+  } else {
+    // تحديث المشروع الحالي
+    savedProjects[projectIndex] = {
+      ...savedProjects[projectIndex],
+      filesData: filesData,
+      userInputs: userInputs,
+      mainInput: mainInput,
+      finalMappingPerFile: finalMappingPerFile,
+      tableNames: tableNames,
+      tableOrder: tableOrder,
+      manualNumbering: manualNumbering, // NEW: حفظ الترقيم اليدوي
+      filesCount: filesData.length,
+      timestamp: new Date().toISOString()
+    };
+  }
+  
+  // حفظ في التخزين المحلي
+  saveProjectsToStorage();
+  
+  showNotification('تم حفظ التعديلات في المشروع الحالي بنجاح', 'success');
+}
+
+// تحميل مشروع محفوظ
+function loadProject(projectIndex) {
+  if (projectIndex < 0 || projectIndex >= savedProjects.length) return;
+  
+  const project = savedProjects[projectIndex];
+  
+  // استعادة البيانات
+  filesData.length = 0;
+  filesData.push(...project.filesData || []);
+  
+  userInputs = project.userInputs || [];
+  mainInput = project.mainInput || null;
+  finalMappingPerFile = project.finalMappingPerFile || {};
+  tableNames = project.tableNames || {};
+  tableOrder = project.tableOrder || {};
+  manualNumbering = project.manualNumbering || {}; // NEW: استعادة الترقيم اليدوي
+  globalTableName.value = project.globalTableName || '';
+  
+  // تحديث واجهة المستخدم
+  renderFilesList();
+  
+  // تحديث حالة الأزرار
+  defineInputsBtn.disabled = filesData.length === 0;
+  editFilesBtn.disabled = filesData.length === 0;
+  finalBtn.disabled = filesData.length === 0;
+  tamamBtn.disabled = filesData.length === 0;
+  customExcelBtn.disabled = filesData.length === 0;
+  dataAnalysisBtn.disabled = filesData.length === 0; // NEW: تحديث زر تحليل البيانات
+  
+  if (filesData.length > 0) {
+    statusEl.textContent = `تم تحميل المشروع: ${project.name}`;
+    statusEl.className = 'status success';
+  }
+  
+  // العودة إلى الصفحة الرئيسية
+  savedProjectsPage.style.display = 'none';
+  document.getElementById('mainCard').style.display = 'block';
+  
+  showNotification(`تم تحميل المشروع "${project.name}" بنجاح`, 'success');
+}
+
+// حذف مشروع محفوظ
+function deleteProject(projectIndex) {
+  if (projectIndex < 0 || projectIndex >= savedProjects.length) return;
+  
+  const projectName = savedProjects[projectIndex].name;
+  
+  if (confirm(`هل تريد حذف المشروع "${projectName}"؟`)) {
+    savedProjects.splice(projectIndex, 1);
+    
+    // حفظ التغييرات في التخزين المحلي
+    saveProjectsToStorage();
+    
+    // إعادة عرض القائمة
+    renderSavedProjectsList();
+    
+    showNotification(`تم حذف المشروع "${projectName}"`, 'success');
+  }
+}
+
+/* ---------- Edit Files System ---------- */
+
+// تهيئة نظام تعديل الملفات
+function initializeEditFiles() {
+  editFilesBtn.addEventListener('click', () => {
+    if (filesData.length === 0) {
+      showNotification('لا توجد ملفات للتعديل', 'warning');
+      return;
+    }
+    
+    showEditFilesPage();
+  });
+  
+  backFromEdit.addEventListener('click', () => {
+    editFilesPage.style.display = 'none';
+    document.getElementById('mainCard').style.display = 'block';
+  });
+  
+  saveAllFiles.addEventListener('click', () => {
+    saveAllFilesChanges();
+  });
+}
+
+// عرض صفحة تعديل الملفات
+function showEditFilesPage() {
+  document.getElementById('mainCard').style.display = 'none';
+  editFilesPage.style.display = 'block';
+  
+  renderAllEditFiles();
+}
+
+// عرض جميع الجداول بشكل متسلسل
+function renderAllEditFiles() {
+  editFilesContainer.innerHTML = '';
+  
+  if (filesData.length === 0) {
+    editFilesContainer.innerHTML = `
+      <div class="status info" style="text-align:center;">
+        <i class="fas fa-info-circle"></i> لا توجد ملفات للتعديل
+      </div>
+    `;
+    return;
+  }
+  
+  filesData.forEach((fd, index) => {
+    const fileSection = document.createElement('div');
+    fileSection.className = 'edit-files-content';
+    fileSection.id = `file-section-${fd.id}`;
+    
+    // عنوان الملف
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'file-table-header';
+    titleDiv.innerHTML = `
+      <div class="file-table-title">
+        <i class="fas fa-file-excel" style="color:var(--primary);"></i>
+        <h3 style="margin:0;">${escapeHtml(fd.name)}</h3>
+        <span class="small-muted">(${fd.headers.length} عمود، ${fd.rows.length} صف)</span>
+      </div>
+      <div class="file-table-actions">
+        <button class="btn small add-row-btn" data-file-id="${fd.id}">
+          <i class="fas fa-plus"></i> إضافة صف
+        </button>
+        <button class="btn small add-col-btn" data-file-id="${fd.id}">
+          <i class="fas fa-plus"></i> إضافة عمود
+        </button>
+      </div>
+    `;
+    
+    fileSection.appendChild(titleDiv);
+    
+    // الجدول القابل للتعديل
+    const tableWrap = document.createElement('div');
+    tableWrap.className = 'table-wrap';
+    
+    const table = document.createElement('table');
+    table.className = 'edit-table';
+    
+    // رأس الجدول
+    const thead = document.createElement('thead');
+    let headerRow = '<tr>';
+    
+    fd.headers.forEach((header, index) => {
+      headerRow += `
+        <th>
+          <div>${escapeHtml(header)}</div>
+          <div class="column-actions">
+            <button class="btn small action-btn delete-col-btn" data-file-id="${fd.id}" data-col-index="${index}" title="حذف العمود">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </th>
+      `;
+    });
+    
+    headerRow += '<th>إجراءات</th>';
+    headerRow += '</tr>';
+    thead.innerHTML = headerRow;
+    table.appendChild(thead);
+    
+    // جسم الجدول
+    const tbody = document.createElement('tbody');
+    
+    fd.rows.forEach((row, rowIndex) => {
+      const tr = document.createElement('tr');
+      
+      row.forEach((cell, colIndex) => {
+        const td = document.createElement('td');
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'edit-cell';
+        input.value = cell !== undefined && cell !== null ? String(cell) : '';
+        input.dataset.fileId = fd.id;
+        input.dataset.rowIndex = rowIndex;
+        input.dataset.colIndex = colIndex;
+        
+        input.addEventListener('change', (e) => {
+          updateCellValue(fd.id, rowIndex, colIndex, e.target.value);
+        });
+        
+        td.appendChild(input);
+        tr.appendChild(td);
+      });
+      
+      // زر حذف الصف
+      const actionTd = document.createElement('td');
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'btn small action-btn delete-row-btn';
+      deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+      deleteBtn.title = 'حذف الصف';
+      deleteBtn.dataset.fileId = fd.id;
+      deleteBtn.dataset.rowIndex = rowIndex;
+      deleteBtn.addEventListener('click', (e) => {
+        const fileId = e.target.dataset.fileId;
+        const rowIndex = parseInt(e.target.dataset.rowIndex);
+        deleteRowFromFile(fileId, rowIndex);
+      });
+      
+      actionTd.appendChild(deleteBtn);
+      tr.appendChild(actionTd);
+      
+      tbody.appendChild(tr);
+    });
+    
+    table.appendChild(tbody);
+    tableWrap.appendChild(table);
+    fileSection.appendChild(tableWrap);
+    
+    editFilesContainer.appendChild(fileSection);
+  });
+  
+  // إضافة أحداث للأزرار
+  document.querySelectorAll('.add-row-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const fileId = e.target.dataset.fileId || e.target.closest('.add-row-btn').dataset.fileId;
+      addRowToFile(fileId);
+    });
+  });
+  
+  document.querySelectorAll('.add-col-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const fileId = e.target.dataset.fileId || e.target.closest('.add-col-btn').dataset.fileId;
+      addColumnToFile(fileId);
+    });
+  });
+  
+  document.querySelectorAll('.delete-col-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const fileId = e.target.dataset.fileId || e.target.closest('.delete-col-btn').dataset.fileId;
+      const colIndex = parseInt(e.target.dataset.colIndex || e.target.closest('.delete-col-btn').dataset.colIndex);
+      deleteColumnFromFile(fileId, colIndex);
+    });
+  });
+  
+  document.querySelectorAll('.delete-row-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const fileId = e.target.dataset.fileId || e.target.closest('.delete-row-btn').dataset.fileId;
+      const rowIndex = parseInt(e.target.dataset.rowIndex || e.target.closest('.delete-row-btn').dataset.rowIndex);
+      deleteRowFromFile(fileId, rowIndex);
+    });
+  });
+}
+
+// تحديث قيمة خلية
+function updateCellValue(fileId, rowIndex, colIndex, value) {
+  const fd = filesData.find(x => x.id === fileId);
+  if (!fd || !fd.rows[rowIndex]) return;
+  
+  fd.rows[rowIndex][colIndex] = value;
+  
+  // إعادة تطبيق التسكين الذكي إذا كان مطبقاً
+  if (fd._assigned) {
+    applyAutoMapping(fd.id);
+  }
+  
+  showNotification('تم تحديث الخلية', 'success');
+}
+
+// إضافة صف جديد
+function addRowToFile(fileId) {
+  const fd = filesData.find(x => x.id === fileId);
+  if (!fd) return;
+  
+  const newRow = new Array(fd.headers.length).fill('');
+  fd.rows.push(newRow);
+  
+  // إعادة تطبيق التسكين الذكي إذا كان مطبقاً
+  if (fd._assigned) {
+    applyAutoMapping(fd.id);
+  }
+  
+  renderAllEditFiles();
+  showNotification('تم إضافة صف جديد', 'success');
+}
+
+// حذف صف
+function deleteRowFromFile(fileId, rowIndex) {
+  const fd = filesData.find(x => x.id === fileId);
+  if (!fd || !fd.rows[rowIndex]) return;
+  
+  if (confirm('هل تريد حذف هذا الصف؟')) {
+    fd.rows.splice(rowIndex, 1);
+    
+    // إعادة تطبيق التسكين الذكي إذا كان مطبقاً
+    if (fd._assigned) {
+      applyAutoMapping(fd.id);
+    }
+    
+    renderAllEditFiles();
+    showNotification('تم حذف الصف', 'success');
+  }
+}
+
+// إضافة عمود جديد
+function addColumnToFile(fileId) {
+  const fd = filesData.find(x => x.id === fileId);
+  if (!fd) return;
+  
+  const colName = prompt('أدخل اسم العمود الجديد:');
+  if (!colName) return;
+  
+  fd.headers.push(colName);
+  
+  // إضافة عمود فارغ لكل صف
+  fd.rows.forEach(row => {
+    row.push('');
+  });
+  
+  // إعادة تطبيق التسكين الذكي إذا كان مطبقاً
+  if (fd._assigned) {
+    applyAutoMapping(fd.id);
+  }
+  
+  renderAllEditFiles();
+  showNotification('تم إضافة عمود جديد', 'success');
+}
+
+// حذف عمود
+function deleteColumnFromFile(fileId, colIndex) {
+  const fd = filesData.find(x => x.id === fileId);
+  if (!fd || !fd.headers[colIndex]) return;
+  
+  const colName = fd.headers[colIndex];
+  
+  if (confirm(`هل تريد حذف العمود "${colName}"؟`)) {
+    fd.headers.splice(colIndex, 1);
+    
+    // حذف العمود من كل صف
+    fd.rows.forEach(row => {
+      row.splice(colIndex, 1);
+    });
+    
+    // إعادة تطبيق التسكين الذكي إذا كان مطبقاً
+    if (fd._assigned) {
+      applyAutoMapping(fd.id);
+    }
+    
+    renderAllEditFiles();
+    showNotification('تم حذف العمود', 'success');
+  }
+}
+
+// حفظ جميع التعديلات على الملفات
+function saveAllFilesChanges() {
+  // حفظ التعديلات في التخزين المحلي
+  const editData = {
+    filesData: filesData,
+    timestamp: new Date().toISOString()
+  };
+  
+  localStorage.setItem('editFilesData', JSON.stringify(editData));
+  showNotification('تم حفظ جميع التعديلات بنجاح', 'success');
+}
+
+/* ---------- File import & management ---------- */
+filesInput.addEventListener('change', async (ev)=>{
+  const list = Array.from(ev.target.files || []);
+  if(list.length===0) return;
+  
+  showProgress(true, `جارٍ استيراد ${list.length} ملف...`);
+  statusEl.textContent = 'جارٍ استيراد الملفات...';
+  statusEl.className = 'status info';
+  
+  let loadedCount = 0;
+  
+  for(const f of list){
+    try{
+      updateProgress((loadedCount / list.length) * 100, `جارٍ معالجة ${f.name}...`);
+      
+      const buffer = await f.arrayBuffer();
+      const data = new Uint8Array(buffer);
+      const wb = XLSX.read(data, { type:'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const arr = XLSX.utils.sheet_to_json(sheet, { header:1, defval:"" });
+      const clean = arr.filter(r => r && r.some(c=>String(c).trim().length>0));
+      
+      if(clean.length===0) continue;
+      
+      // detect header row (first 10 rows choose max textual cells)
+      let bestIdx=0, bestCount=-1;
+      for(let i=0;i<Math.min(clean.length,10);i++){
+        const cnt = (clean[i]||[]).filter(c=>typeof c==='string' && c.trim().length>0).length;
+        if(cnt>bestCount){ bestCount=cnt; bestIdx=i; }
+      }
+      
+      const headers = (clean[bestIdx]||[]).map((h,ci)=> (h===undefined||h===null||String(h).trim()==='')?`عمود_${ci+1}`:String(h));
+      const rows = clean.slice(bestIdx+1).map(r => headers.map((_,i)=> r[i]!==undefined? r[i] : ""));
+      const id = 'f'+Date.now()+(Math.random()*1000|0);
+      
+      filesData.push({id, name: f.name, headerRowIndex:bestIdx, headers, rows});
+      loadedCount++;
+      
+    }catch(err){
+      console.error('file import err', err);
+      showNotification(`خطأ في معالجة الملف: ${f.name}`, 'error');
+    }
+  }
+  
+  showProgress(false);
+  renderFilesList();
+  statusEl.textContent = `تم استيراد ${filesData.length} ملفًا. `;
+  statusEl.className = 'status success';
+  
+  // تمكين الأزرار بعد تحميل الملفات
+  defineInputsBtn.disabled = filesData.length===0;
+  editFilesBtn.disabled = filesData.length===0;
+  finalBtn.disabled = filesData.length===0;
+  tamamBtn.disabled = filesData.length===0;
+  customExcelBtn.disabled = filesData.length===0;
+  dataAnalysisBtn.disabled = filesData.length===0; // NEW: تمكين زر تحليل البيانات
+  
+  // تطبيق التسكين الذكي تلقائياً إذا كانت المدخلات محددة
+  if (userInputs.length > 0) {
+    applyAutoMappingToAllFiles();
+  }
+});
+
+/* render files list with edit & import buttons */
+function renderFilesList(){
+  filesArea.innerHTML = '';
+  
+  if (filesData.length === 0) {
+    filesArea.innerHTML = `
+      <div class="status info" style="text-align:center;">
+        <i class="fas fa-info-circle"></i> لم يتم تحميل أي ملفات بعد
+      </div>
+    `;
+    return;
+  }
+  
+  filesData.forEach((f,idx)=>{
+    const div = document.createElement('div'); 
+    div.className='file-item';
+    
+    const meta = document.createElement('div'); 
+    meta.className='meta';
+    meta.innerHTML = `
+      <div style="font-weight:600; display:flex; align-items:center; gap:8px;">
+        <i class="fas fa-file-excel" style="color:var(--primary);"></i>
+        ${escapeHtml(f.name)}
+      </div>
+      <div class="small-muted">رؤوس: ${f.headers.length} — صفوف: ${f.rows.length}</div>
+    `;
+    
+    const actions = document.createElement('div');
+    actions.style.display = 'flex';
+    actions.style.gap = '5px';
+    
+    const removeBtn = document.createElement('button'); 
+    removeBtn.className='btn small action-btn'; 
+    removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+    removeBtn.title = 'حذف الملف';
+    removeBtn.addEventListener('click', ()=> removeFile(f.id));
+    
+    actions.appendChild(removeBtn);
+    
+    div.appendChild(meta); 
+    div.appendChild(actions);
+    filesArea.appendChild(div);
+  });
+}
+
+// إزالة ملف من القائمة
+function removeFile(fileId) {
+  const fileIndex = filesData.findIndex(x => x.id === fileId);
+  if (fileIndex === -1) return;
+  
+  const fileName = filesData[fileIndex].name;
+  
+  if (confirm(`هل تريد حذف الملف "${fileName}"؟`)) {
+    filesData.splice(fileIndex, 1);
+    
+    // تحديث الملف النشط إذا كان الملف المحذوف هو الملف النشط
+    if (activeEditFileId === fileId) {
+      activeEditFileId = null;
+    }
+    
+    // تحديث الملفات المؤكدة
+    delete finalMappingPerFile[fileId];
+    delete candidateMappingPerFile[fileId];
+    
+    renderFilesList();
+    showNotification(`تم حذف الملف "${fileName}"`, 'success');
+    
+    // تحديث حالة الأزرار
+    defineInputsBtn.disabled = filesData.length === 0;
+    editFilesBtn.disabled = filesData.length === 0;
+    finalBtn.disabled = filesData.length === 0;
+    tamamBtn.disabled = filesData.length === 0;
+    customExcelBtn.disabled = filesData.length === 0;
+    dataAnalysisBtn.disabled = filesData.length === 0; // NEW: تحديث زر تحليل البيانات
+    
+    if (filesData.length === 0) {
+      statusEl.textContent = 'سجل: لا ملفات محمّلة';
+      statusEl.className = 'status info';
+    }
+  }
+}
+
+/* ---------- Inputs popup flow ---------- */
+defineInputsBtn.addEventListener('click', ()=> { 
+  inputsPopup.style.display='flex'; 
+  inputsPopup.setAttribute('aria-hidden','false'); 
+});
+
+toInputsNames.addEventListener('click', ()=>{
+  const cnt = parseInt(inputsCount.value);
+  if(isNaN(cnt) || cnt<1){ 
+    showNotification('أدخل عددًا صحيحًا أكبر من صفر', 'error');
+    return; 
+  }
+  
+  // render cnt input fields with suggestions from first file headers if exist
+  inputsNamesArea.innerHTML = '';
+  const suggestions = generateSuggestionsForInputs(cnt);
+  
+  for(let i=1;i<=cnt;i++){
+    const div = document.createElement('div'); 
+    div.style.margin='10px 0';
+    div.style.display = 'flex';
+    div.style.flexDirection = 'column';
+    div.style.alignItems = 'flex-start';
+    
+    const label = document.createElement('label');
+    label.textContent = `المدخل ${i}`;
+    label.style.marginBottom = '5px';
+    label.style.fontWeight = '500';
+    
+    const inp = document.createElement('input'); 
+    inp.type='text'; 
+    inp.placeholder=`المدخل ${i}`; 
+    inp.style.width='100%'; 
+    inp.value = suggestions[i-1] || '';
+    inp.style.borderRadius = '6px';
+    inp.style.border = '1px solid #ddd';
+    
+    div.appendChild(label);
+    div.appendChild(inp);
+    inputsNamesArea.appendChild(div);
+  }
+  
+  // replace "التالي" with save button
+  toInputsNames.style.display='none';
+  closeInputsPopup.style.display='none';
+  
+  const saveBtn = document.createElement('button'); 
+  saveBtn.className='btn ok-btn'; 
+  saveBtn.innerHTML = '<i class="fas fa-save"></i> حفظ المدخلات';
+  saveBtn.style.marginTop = '15px';
+  
+  saveBtn.addEventListener('click', ()=>{
+    const nodes = Array.from(inputsNamesArea.querySelectorAll('input'));
+    const vals = nodes.map(n=>n.value.trim()).filter(v=>v);
+    
+    if(vals.length===0){ 
+      showNotification('أدخل مدخلًا واحدًا على الأقل', 'error');
+      return; 
+    }
+    
+    userInputs = vals;
+    
+    // تعيين أول مدخل كمدخل رئيسي تلقائياً
+    mainInput = userInputs[0];
+    
+    inputsPopup.style.display='none'; 
+    inputsPopup.setAttribute('aria-hidden','true');
+    toInputsNames.style.display='inline-block'; 
+    closeInputsPopup.style.display='inline-block';
+    
+    statusEl.textContent = `تم تحديد ${userInputs.length} مدخل/مدخلات. المدخل الرئيسي: ${mainInput}`;
+    statusEl.className = 'status success';
+    
+    // تطبيق التسكين الذكي تلقائياً
+    if (filesData.length > 0) {
+      applyAutoMappingToAllFiles();
+    }
+    
+    showNotification('تم حفظ المدخلات بنجاح', 'success');
+  });
+  
+  inputsNamesArea.appendChild(saveBtn);
+});
+
+closeInputsPopup.addEventListener('click', ()=> { 
+  inputsPopup.style.display='none'; 
+  inputsPopup.setAttribute('aria-hidden','true'); 
+});
+
+function generateSuggestionsForInputs(count){
+  if(filesData.length===0) return Array.from({length:count}).map(()=>'');
+  // use first file headers as suggestions (or mix)
+  const hdrs = filesData[0].headers.slice();
+  const out = [];
+  for(let i=0;i<count;i++) out.push(hdrs[i] || '');
+  return out;
+}
+
+/* ---------- Auto Mapping System ---------- */
+
+// تطبيق التسكين الذكي على جميع الملفات
+function applyAutoMappingToAllFiles() {
+  if (filesData.length === 0 || userInputs.length === 0) return;
+  
+  showProgress(true, 'جارٍ تطبيق التسكين الذكي...');
+  
+  setTimeout(() => {
+    filesData.forEach((fd, index) => {
+      updateProgress((index / filesData.length) * 100, `جارٍ معالجة ${fd.name}...`);
+      applyAutoMapping(fd.id);
+    });
+    
+    showProgress(false);
+    showNotification('تم تطبيق التسكين الذكي على جميع الملفات', 'success');
+    finalBtn.disabled = false;
+    tamamBtn.disabled = false;
+    customExcelBtn.disabled = false;
+    dataAnalysisBtn.disabled = false; // NEW: تمكين زر تحليل البيانات
+  }, 100);
+}
+
+// تطبيق التسكين الذكي على ملف معين
+function applyAutoMapping(fileId) {
+  const fd = filesData.find(x => x.id === fileId);
+  if (!fd) return;
+  
+  // حساب أفضل التطابقات لكل مدخل
+  const mapping = {};
+  userInputs.forEach(inp => {
+    const candidates = fd.headers.map(h => ({header:h, score: combinedScore(inp, h)}))
+      .sort((a,b) => b.score - a.score);
+    
+    if (candidates[0] && candidates[0].score >= 0.45) {
+      mapping[inp] = candidates[0].header;
+    }
+  });
+  
+  finalMappingPerFile[fd.id] = mapping;
+  applyMappingToFile(fd.id, mapping, false);
+}
+
+/* ---------- Apply mapping to file: perform filtering & merging ---------- */
+function applyMappingToFile(fileId, mapping, previewOnly){
+  // mapping: { input => header }
+  const fd = filesData.find(x => x.id === fileId); 
+  if(!fd) return;
+  
+  // determine selected headers
+  const selectedHeaders = Array.from(new Set(Object.values(mapping)));
+  if(selectedHeaders.length === 0){
+    if(!previewOnly) showNotification('لم يتم اختيار أي أعمدة لهذا الملف', 'warning'); 
+    return;
+  }
+  
+  // build filtered rows as objects mapping header->value
+  const filteredObjs = fd.rows.map(row => {
+    const obj = {};
+    selectedHeaders.forEach((h,ci) => {
+      const idx = fd.headers.indexOf(h);
+      obj[h] = idx>=0 ? (row[idx]!==undefined? row[idx] : '') : '';
+    });
+    return obj;
+  });
+  
+  // if mainInput mapped to header -> apply grouping & vertical merging
+  const mainHeader = mapping[mainInput] || null;
+  let mergedResult = [];
+  
+  if(mainHeader){
+    // group rows by similarity of mainHeader values
+    const mainColValues = filteredObjs.map(o=> String(o[mainHeader]||'').trim());
+    const used = new Array(filteredObjs.length).fill(false);
+    
+    for(let i=0;i<filteredObjs.length;i++){
+      if(used[i]) continue;
+      const group = [i]; 
+      used[i]=true;
+      
+      for(let j=i+1;j<filteredObjs.length;j++){
+        if(used[j]) continue;
+        const sim = similarityOfStrings(mainColValues[i], mainColValues[j]);
+        if(sim >= 0.85){ 
+          used[j]=true; 
+          group.push(j); 
+        }
+      }
+      
+      // create group wrapper: we will produce group rows preserving other columns; main cell will be merged visually later
+      mergedResult.push(group.map(idx=>{
+        return filteredObjs[idx];
+      }));
+    }
+  } else {
+    // no main header: each row is its own group
+    mergedResult = fd.rows.map((_,i)=> [filteredObjs[i]]);
+  }
+
+  // store result into fd._assigned for final rendering
+  fd._assigned = {
+    mapping,
+    selectedHeaders,
+    mergedGroups: mergedResult
+  };
+  
+  // if not previewOnly, update status and enable final button
+  if(!previewOnly){
+    statusEl.textContent = `تم تسكين الملف: ${fd.name} — مجموع مجموعات: ${mergedResult.length}`;
+    statusEl.className = 'status success';
+    finalBtn.disabled = false;
+    tamamBtn.disabled = false;
+    customExcelBtn.disabled = false;
+    dataAnalysisBtn.disabled = false; // NEW: تمكين زر تحليل البيانات
+  }
+}
+
+/* ---------- Final result rendering (one page: separate tables stacked) ---------- */
+finalBtn.addEventListener('click', showFinalResults);
+
+function showFinalResults(){
+  showProgress(true, 'جارٍ تجهيز النتيجة النهائية...');
+  
+  // Use setTimeout to allow UI to update
+  setTimeout(() => {
+    // ensure that each file has fd._assigned; if not, attempt to compute default mapping (auto)
+    filesData.forEach((fd, index) => {
+      updateProgress((index / filesData.length) * 100, `جارٍ معالجة ${fd.name}...`);
+      
+      if(!fd._assigned){
+        // attempt default mapping using combinedScore with userInputs
+        const defaultMap = {};
+        userInputs.forEach(inp=>{
+          const candidates = fd.headers.map(h=>({header:h,score:combinedScore(inp,h)})).sort((a,b)=>b.score-a.score);
+          if(candidates[0] && candidates[0].score>=0.45) defaultMap[inp] = candidates[0].header;
+        });
+        finalMappingPerFile[fd.id] = defaultMap;
+        applyMappingToFile(fd.id, defaultMap, false);
+      } else {
+        // ensure finalMappingPerFile recorded
+        finalMappingPerFile[fd.id] = fd._assigned.mapping || {};
+      }
+    });
+
+    // render final page
+    document.getElementById('mainCard').style.display='none';
+    resultPage.style.display='block';
+    finalTitle.textContent = globalTableName.value.trim() || 'النتيجة النهائية';
+    finalNote.textContent = `ملفات: ${filesData.length}`;
+    finalContent.innerHTML = '';
+    
+    filesData.forEach(fd=>{
+      const section = document.createElement('div'); 
+      section.className='card'; 
+      section.style.marginBottom='15px';
+      
+      // header
+      const titleDiv = document.createElement('div'); 
+      titleDiv.style.textAlign='right'; 
+      titleDiv.innerHTML = `
+        <div style="font-weight:700; display:flex; align-items:center; gap:8px;">
+          <i class="fas fa-file-excel" style="color:var(--primary);"></i>
+          ${escapeHtml(tableNames[fd.id] || fd.name)}
+        </div>
+        <div class="small-muted">صفوف: ${fd.rows.length} — أعمدة: ${fd.headers.length}</div>
+      `;
+      section.appendChild(titleDiv);
+      
+      // assigned
+      const assigned = fd._assigned;
+      if(!assigned || !assigned.selectedHeaders || assigned.selectedHeaders.length===0){
+        const note = document.createElement('div'); 
+        note.className='status warning'; 
+        note.textContent = 'لا أعمدة مُسْتَخدمة لهذا الملف.';
+        section.appendChild(note);
+      } else {
+        const wrap = document.createElement('div'); 
+        wrap.className='table-wrap';
+        
+        const tbl = document.createElement('table'); 
+        tbl.className='result-table editable-table';
+        
+        const thead = document.createElement('thead'); 
+        thead.innerHTML = `
+          <tr>
+            ${assigned.selectedHeaders.map(h=>`<th>${escapeHtml(h)}</th>`).join('')}
+            <th>إجراءات</th>
+          </tr>
+        `;
+        tbl.appendChild(thead);
+        
+        const tbody = document.createElement('tbody');
+        // show merged groups as described: main header merged vertically
+        const mainH = assigned.mapping[mainInput] || null;
+        
+        for(const group of assigned.mergedGroups){
+          for(let i=0;i<group.length;i++){
+            const obj = group[i];
+            const tr = document.createElement('tr');
+            
+            assigned.selectedHeaders.forEach(h=>{
+              if(h===mainH){
+                if(i===0){
+                  const td = document.createElement('td'); 
+                  td.textContent = obj[h]||''; 
+                  td.style.fontWeight='700';
+                  td.style.background = '#f0f7ff';
+                  
+                  // NEW: Add manual numbering if exists
+                  const groupIndex = assigned.mergedGroups.indexOf(group);
+                  if (manualNumbering[fd.id] && manualNumbering[fd.id][groupIndex]) {
+                    td.className = 'numbered-cell';
+                    td.dataset.number = manualNumbering[fd.id][groupIndex];
+                  }
+                  
+                  if(group.length>1) td.rowSpan = group.length;
+                  tr.appendChild(td);
+                } else {
+                  // skip cell creation when merged
+                }
+              } else {
+                const td = document.createElement('td'); 
+                td.textContent = obj[h]||''; 
+                tr.appendChild(td);
+              }
+            });
+            
+            // Add delete row button
+            const actionTd = document.createElement('td');
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn small action-btn';
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            deleteBtn.title = 'حذف الصف';
+            deleteBtn.addEventListener('click', () => {
+              deleteRowFromFinal(fd.id, group, i);
+            });
+            
+            actionTd.appendChild(deleteBtn);
+            tr.appendChild(actionTd);
+            
+            tbody.appendChild(tr);
+          }
+        }
+        
+        tbl.appendChild(tbody);
+        wrap.appendChild(tbl);
+        section.appendChild(wrap);
+        
+        // زر إضافة صف أسفل كل جدول
+        const addRowBtn = document.createElement('button');
+        addRowBtn.className = 'btn small';
+        addRowBtn.style.marginTop = '10px';
+        addRowBtn.style.width = '100%';
+        addRowBtn.innerHTML = '<i class="fas fa-plus"></i> إضافة صف';
+        addRowBtn.addEventListener('click', () => {
+          addRowToFinal(fd.id);
+        });
+        
+        section.appendChild(addRowBtn);
+      }
+      
+      finalContent.appendChild(section);
+    });
+    
+    showProgress(false);
+  }, 100);
+}
+
+// حذف صف من النتيجة النهائية
+function deleteRowFromFinal(fileId, group, rowIndex) {
+  const fd = filesData.find(x=>x.id===fileId); 
+  if(!fd || !fd._assigned) return;
+  
+  if(confirm('هل تريد حذف هذا الصف؟')) {
+    // Remove the row from the group
+    group.splice(rowIndex, 1);
+    
+    // If the group is now empty, remove the entire group
+    if(group.length === 0) {
+      const groupIndex = fd._assigned.mergedGroups.indexOf(group);
+      if(groupIndex > -1) {
+        fd._assigned.mergedGroups.splice(groupIndex, 1);
+      }
+    }
+    
+    // Refresh the final results view
+    showFinalResults();
+    showNotification('تم حذف الصف بنجاح', 'success');
+  }
+}
+
+// إضافة صف جديد إلى النتيجة النهائية لملف معين
+function addRowToFinal(fileId) {
+  const fd = filesData.find(x => x.id === fileId);
+  if (!fd || !fd._assigned) {
+    showNotification('لم يتم تسكين الملف بعد', 'warning');
+    return;
+  }
+  
+  // Create a new empty row
+  const newRow = {};
+  fd._assigned.selectedHeaders.forEach(h => {
+    newRow[h] = '';
+  });
+  
+  // Add the row as a new group (since it's a new entry)
+  fd._assigned.mergedGroups.push([newRow]);
+  
+  // Refresh the final results view
+  showFinalResults();
+  showNotification('تم إضافة صف جديد', 'success');
+}
+
+// تفعيل وضع التعديل على الجداول
+function enableTableEditing() {
+  isEditingTable = !isEditingTable;
+  
+  if(isEditingTable) {
+    // Add input fields to all table cells
+    const tables = document.querySelectorAll('.editable-table');
+    tables.forEach(table => {
+      const tbody = table.querySelector('tbody');
+      const rows = tbody.querySelectorAll('tr');
+      
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td:not(:last-child)'); // Exclude actions column
+        cells.forEach(cell => {
+          const currentValue = cell.textContent;
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = currentValue;
+          input.style.width = '100%';
+          input.style.border = 'none';
+          input.style.background = 'transparent';
+          input.style.textAlign = 'center';
+          
+          cell.textContent = '';
+          cell.appendChild(input);
+        });
+      });
+    });
+    
+    editTableBtn.innerHTML = '<i class="fas fa-check"></i> إنهاء التعديل';
+    editTableBtn.style.background = '#28a745';
+    showNotification('تم تفعيل وضع التعديل، يمكنك تعديل أي خلية', 'info');
+  } else {
+    // Save changes and revert to normal view
+    const tables = document.querySelectorAll('.editable-table');
+    tables.forEach(table => {
+      const tbody = table.querySelector('tbody');
+      const rows = tbody.querySelectorAll('tr');
+      
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td:not(:last-child)'); // Exclude actions column
+        cells.forEach(cell => {
+          const input = cell.querySelector('input');
+          if(input) {
+            cell.textContent = input.value;
+          }
+        });
+      });
+    });
+    
+    editTableBtn.innerHTML = '<i class="fas fa-edit"></i> تعديل الجدول';
+    editTableBtn.style.background = '#ffc107';
+    showNotification('تم حفظ التعديلات', 'success');
+  }
+}
+
+// حفظ النتيجة النهائية في ملف
+function saveFinalResult() {
+  saveFilePopup.style.display = 'flex';
+  saveFilePopup.setAttribute('aria-hidden', 'false');
+}
+
+// تأكيد حفظ الملف
+confirmSaveFile.addEventListener('click', () => {
+  const fileName = saveFileName.value.trim() || 'النتيجة_النهائية';
+  
+  try {
+    // Create a new workbook
+    const wb = XLSX.utils.book_new();
+    
+    // Add each file as a separate sheet
+    filesData.forEach((fd, index) => {
+      if (fd._assigned && fd._assigned.selectedHeaders && fd._assigned.selectedHeaders.length > 0) {
+        // Prepare data for export
+        const exportData = [];
+        
+        // Add headers
+        exportData.push(fd._assigned.selectedHeaders);
+        
+        // Add rows from merged groups
+        fd._assigned.mergedGroups.forEach(group => {
+          group.forEach(obj => {
+            const row = fd._assigned.selectedHeaders.map(h => obj[h] || '');
+            exportData.push(row);
+          });
+        });
+        
+        // Create worksheet and add to workbook
+        const ws = XLSX.utils.aoa_to_sheet(exportData);
+        XLSX.utils.book_append_sheet(wb, ws, `Sheet${index+1}`);
+      }
+    });
+    
+    // Generate and download the file
+    const finalFileName = `${fileName}_${new Date().toISOString().slice(0,10)}.xlsx`;
+    XLSX.writeFile(wb, finalFileName);
+    
+    saveFilePopup.style.display = 'none';
+    saveFilePopup.setAttribute('aria-hidden', 'true');
+    showNotification('تم حفظ النتيجة النهائية بنجاح', 'success');
+  } catch (error) {
+    console.error('Save error:', error);
+    showNotification('حدث خطأ أثناء الحفظ', 'error');
+  }
+});
+
+closeSaveFilePopup.addEventListener('click', () => {
+  saveFilePopup.style.display = 'none';
+  saveFilePopup.setAttribute('aria-hidden', 'true');
+});
+
+/* back to main */
+backToMain.addEventListener('click', ()=> {
+  resultPage.style.display='none';
+  document.getElementById('mainCard').style.display='block';
+});
+
+/* ---------- Tamam Page System ---------- */
+
+// تهيئة صفحة التمام
+function initializeTamamPage() {
+  tamamBtn.addEventListener('click', () => {
+    if (filesData.length === 0) {
+      showNotification('لا توجد ملفات لعرضها في صفحة التمام', 'warning');
+      return;
+    }
+    
+    showTamamPage();
+  });
+  
+  backFromTamam.addEventListener('click', () => {
+    tamamPage.style.display = 'none';
+    document.getElementById('mainCard').style.display = 'block';
+  });
+  
+  saveTamamBtn.addEventListener('click', () => {
+    saveTamamToPdf();
+  });
+  
+  saveImageBtn.addEventListener('click', () => {
+    saveTamamToImage();
+  });
+  
+  refreshTamam.addEventListener('click', () => {
+    renderTamamContent();
+  });
+  
+  compactMode.addEventListener('click', () => {
+    toggleCompactMode();
+  });
+  
+  ultraCompactMode.addEventListener('click', () => {
+    toggleUltraCompactMode();
+  });
+  
+  twoColumnMode.addEventListener('click', () => {
+    toggleTwoColumnMode();
+  });
+  
+  tamamTitle.addEventListener('change', () => {
+    renderTamamContent();
+  });
+  
+  // إضافة حدث استيراد ملف في صفحة التمام
+  tamamFileInput.addEventListener('change', async (ev) => {
+    const file = ev.target.files[0];
+    if (!file) return;
+    
+    try {
+      showProgress(true, `جارٍ استيراد ${file.name}...`);
+      
+      const buffer = await file.arrayBuffer();
+      const data = new Uint8Array(buffer);
+      const wb = XLSX.read(data, { type: 'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const arr = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+      const clean = arr.filter(r => r && r.some(c => String(c).trim().length > 0));
+      
+      if (clean.length === 0) {
+        showNotification('الملف فارغ أو لا يحتوي على بيانات', 'warning');
+        return;
+      }
+      
+      // detect header row (first 10 rows choose max textual cells)
+      let bestIdx = 0, bestCount = -1;
+      for (let i = 0; i < Math.min(clean.length, 10); i++) {
+        const cnt = (clean[i] || []).filter(c => typeof c === 'string' && c.trim().length > 0).length;
+        if (cnt > bestCount) { bestCount = cnt; bestIdx = i; }
+      }
+      
+      const headers = (clean[bestIdx] || []).map((h, ci) => (h === undefined || h === null || String(h).trim() === '') ? `عمود_${ci + 1}` : String(h));
+      const rows = clean.slice(bestIdx + 1).map(r => headers.map((_, i) => r[i] !== undefined ? r[i] : ""));
+      const id = 'f' + Date.now() + (Math.random() * 1000 | 0);
+      
+      filesData.push({ id, name: file.name, headerRowIndex: bestIdx, headers, rows });
+      
+      // تطبيق التسكين الذكي تلقائياً إذا كانت المدخلات محددة
+      if (userInputs.length > 0) {
+        applyAutoMapping(id);
+      }
+      
+      showProgress(false);
+      renderTamamContent();
+      showNotification(`تم استيراد الملف ${file.name} بنجاح`, 'success');
+      
+    } catch (err) {
+      console.error('file import err', err);
+      showProgress(false);
+      showNotification(`خطأ في معالجة الملف: ${file.name}`, 'error');
+    }
+  });
+}
+
+// عرض صفحة التمام
+function showTamamPage() {
+  document.getElementById('mainCard').style.display = 'none';
+  tamamPage.style.display = 'block';
+  
+  renderTamamContent();
+}
+
+// عرض محتوى صفحة التمام
+function renderTamamContent() {
+  tamamPagesContainer.innerHTML = '';
+  
+  // إنشاء صفحة A4 واحدة
+  const a4Page = document.createElement('div');
+  a4Page.className = 'tamam-container';
+  
+  // رأس الصفحة - تم إزالة تاريخ الإصدار
+  const header = document.createElement('div');
+  header.className = 'tamam-header';
+  header.innerHTML = `
+    <div class="tamam-title">${tamamTitle.value || 'التمام'}</div>
+  `;
+  a4Page.appendChild(header);
+  
+  // محتوى الصفحة
+  const content = document.createElement('div');
+  content.className = 'tamam-content';
+  
+  if (tamamDisplayMode === 'two-column') {
+    // استخدام تصميم العمودين
+    const twoColumnLayout = document.createElement('div');
+    twoColumnLayout.className = 'tamam-two-column-layout';
+    
+    // إنشاء عمودين
+    const leftColumn = document.createElement('div');
+    leftColumn.className = 'tamam-column';
+    
+    const rightColumn = document.createElement('div');
+    rightColumn.className = 'tamam-column';
+    
+    // فرز الجداول حسب الترتيب المحدد
+    const sortedFiles = [...filesData].sort((a, b) => {
+      const orderA = tableOrder[a.id] || filesData.indexOf(a) + 1;
+      const orderB = tableOrder[b.id] || filesData.indexOf(b) + 1;
+      return orderA - orderB;
+    });
+    
+    // توزيع الجداول بالتناوب بين العمودين
+    sortedFiles.forEach((fd, index) => {
+      const tableContainer = createAdaptiveTamamTable(fd);
+      
+      if (index % 2 === 0) {
+        leftColumn.appendChild(tableContainer);
+      } else {
+        rightColumn.appendChild(tableContainer);
+      }
+    });
+    
+    twoColumnLayout.appendChild(leftColumn);
+    twoColumnLayout.appendChild(rightColumn);
+    content.appendChild(twoColumnLayout);
+  } else {
+    // استخدام نظام الشبكة لتوزيع الجداول بشكل متوازن
+    const gridContainer = document.createElement('div');
+    gridContainer.className = 'tamam-grid-container';
+    
+    // فرز الجداول حسب الترتيب المحدد
+    const sortedFiles = [...filesData].sort((a, b) => {
+      const orderA = tableOrder[a.id] || filesData.indexOf(a) + 1;
+      const orderB = tableOrder[b.id] || filesData.indexOf(b) + 1;
+      return orderA - orderB;
+    });
+    
+    sortedFiles.forEach(fd => {
+      const gridItem = document.createElement('div');
+      gridItem.className = 'tamam-grid-item';
+      
+      const tableContainer = createAdaptiveTamamTable(fd);
+      gridItem.appendChild(tableContainer);
+      gridContainer.appendChild(gridItem);
+    });
+    
+    content.appendChild(gridContainer);
+  }
+  
+  a4Page.appendChild(content);
+  
+  // إضافة مؤشر الصفحة
+  const pageIndicator = document.createElement('div');
+  pageIndicator.className = 'page-indicator';
+  pageIndicator.textContent = 'صفحة 1 من 1';
+  a4Page.appendChild(pageIndicator);
+  
+  tamamPagesContainer.appendChild(a4Page);
+  
+  // تحديث عناصر التحكم في ترتيب الجداول
+  renderTableOrderControls();
+}
+
+// إنشاء جدول متكيف لصفحة التمام
+function createAdaptiveTamamTable(fd) {
+  const tableContainer = document.createElement('div');
+  tableContainer.className = 'tamam-table-container';
+  
+  // عنوان الجدول
+  const titleDiv = document.createElement('div');
+  titleDiv.className = 'tamam-table-title';
+  titleDiv.textContent = tableNames[fd.id] || fd.name;
+  tableContainer.appendChild(titleDiv);
+  
+  // الجدول
+  const assigned = fd._assigned;
+  if (!assigned || !assigned.selectedHeaders || assigned.selectedHeaders.length === 0) {
+    const note = document.createElement('div');
+    note.className = 'status warning';
+    note.textContent = 'لا أعمدة مُسْتَخدمة لهذا الملف.';
+    note.style.fontSize = '10px';
+    note.style.padding = '5px';
+    tableContainer.appendChild(note);
+    return tableContainer;
+  }
+  
+  const table = document.createElement('table');
+  table.className = 'tamam-table';
+  
+  // تطبيق وضع التصغير المحدد
+  if (tamamCompactMode === 'compact') {
+    table.classList.add('compact-table');
+  } else if (tamamCompactMode === 'ultra-compact') {
+    table.classList.add('ultra-compact-table');
+  } else {
+    // تحديد حجم الخط بناءً على عدد الأعمدة والصفوف
+    const adaptiveFontClass = determineAdaptiveFontSize(assigned.selectedHeaders.length, assigned.mergedGroups.length);
+    table.classList.add(adaptiveFontClass);
+  }
+  
+  // رأس الجدول
+  const thead = document.createElement('thead');
+  thead.innerHTML = `
+    <tr>
+      ${assigned.selectedHeaders.map(h => `<th>${escapeHtml(h)}</th>`).join('')}
+    </tr>
+  `;
+  table.appendChild(thead);
+  
+  // جسم الجدول
+  const tbody = document.createElement('tbody');
+  const mainH = assigned.mapping[mainInput] || null;
+  
+  for (const group of assigned.mergedGroups) {
+    for (let i = 0; i < group.length; i++) {
+      const obj = group[i];
+      const tr = document.createElement('tr');
+      
+      // تحديد إذا كان هذا الصف يحتوي على بيانات المدخلات
+      const isInputRow = mainH && obj[mainH] && obj[mainH].toString().trim() !== '';
+      
+      if (isInputRow) {
+        tr.classList.add('input-row');
+      }
+      
+      assigned.selectedHeaders.forEach(h => {
+        if (h === mainH) {
+          if (i === 0) {
+            const td = document.createElement('td');
+            td.textContent = obj[h] || '';
+            td.style.fontWeight = '700';
+            
+            // NEW: Add manual numbering if exists
+            const groupIndex = assigned.mergedGroups.indexOf(group);
+            if (manualNumbering[fd.id] && manualNumbering[fd.id][groupIndex]) {
+              td.className = 'numbered-cell';
+              td.dataset.number = manualNumbering[fd.id][groupIndex];
+            }
+            
+            if (group.length > 1) td.rowSpan = group.length;
+            tr.appendChild(td);
+          } else {
+            // skip cell creation when merged
+          }
+        } else {
+          const td = document.createElement('td');
+          td.textContent = obj[h] || '';
+          tr.appendChild(td);
+        }
+      });
+      
+      tbody.appendChild(tr);
+    }
+  }
+  
+  table.appendChild(tbody);
+  tableContainer.appendChild(table);
+  
+  return tableContainer;
+}
+
+// تحديد حجم الخط التكيفي بناءً على حجم الجدول
+function determineAdaptiveFontSize(columnsCount, rowsCount) {
+  const totalCells = columnsCount * rowsCount;
+  
+  if (totalCells > 200) {
+    return 'adaptive-font-small';
+  } else if (totalCells > 100) {
+    return 'adaptive-font-medium';
+  } else {
+    return 'adaptive-font-large';
+  }
+}
+
+// عرض عناصر التحكم في ترتيب الجداول
+function renderTableOrderControls() {
+  tamamOrderInputs.innerHTML = '';
+  
+  filesData.forEach((fd, index) => {
+    const orderInput = document.createElement('input');
+    orderInput.type = 'number';
+    orderInput.min = '1';
+    orderInput.max = filesData.length.toString();
+    orderInput.value = tableOrder[fd.id] || (index + 1);
+    orderInput.dataset.fileId = fd.id;
+    orderInput.style.width = '50px';
+    orderInput.style.textAlign = 'center';
+    orderInput.style.padding = '5px';
+    orderInput.style.border = '1px solid #ddd';
+    orderInput.style.borderRadius = '4px';
+    
+    orderInput.addEventListener('change', (e) => {
+      const fileId = e.target.dataset.fileId;
+      const order = parseInt(e.target.value);
+      
+      if (order < 1 || order > filesData.length) {
+        showNotification('الترتيب يجب أن يكون بين 1 و ' + filesData.length, 'warning');
+        e.target.value = tableOrder[fileId] || (filesData.findIndex(f => f.id === fileId) + 1);
+        return;
+      }
+      
+      tableOrder[fileId] = order;
+      renderTamamContent();
+    });
+    
+    const label = document.createElement('label');
+    label.textContent = tableNames[fd.id] || fd.name;
+    label.style.marginLeft = '5px';
+    label.style.marginRight = '10px';
+    
+    tamamOrderInputs.appendChild(orderInput);
+    tamamOrderInputs.appendChild(label);
+  });
+}
+
+// تبديل وضع التصغير
+function toggleCompactMode() {
+  if (tamamCompactMode === 'normal') {
+    tamamCompactMode = 'compact';
+    compactMode.innerHTML = '<i class="fas fa-expand"></i> وضع العرض العادي';
+    showNotification('تم تفعيل وضع التصغير', 'info');
+  } else {
+    tamamCompactMode = 'normal';
+    compactMode.innerHTML = '<i class="fas fa-compress"></i> وضع التصغير';
+    showNotification('تم تعطيل وضع التصغير', 'info');
+  }
+  
+  renderTamamContent();
+}
+
+// تبديل وضع التصغير المتقدم
+function toggleUltraCompactMode() {
+  if (tamamCompactMode === 'ultra-compact') {
+    tamamCompactMode = 'normal';
+    ultraCompactMode.innerHTML = '<i class="fas fa-compress-arrows-alt"></i> تصغير متقدم';
+    showNotification('تم تعطيل وضع التصغير المتقدم', 'info');
+  } else {
+    tamamCompactMode = 'ultra-compact';
+    ultraCompactMode.innerHTML = '<i class="fas fa-expand"></i> وضع العرض العادي';
+    showNotification('تم تفعيل وضع التصغير المتقدم', 'info');
+  }
+  
+  renderTamamContent();
+}
+
+// تبديل وضع العمودين
+function toggleTwoColumnMode() {
+  if (tamamDisplayMode === 'grid') {
+    tamamDisplayMode = 'two-column';
+    twoColumnMode.innerHTML = '<i class="fas fa-th"></i> وضع الشبكة';
+    showNotification('تم تفعيل وضع العمودين', 'info');
+  } else {
+    tamamDisplayMode = 'grid';
+    twoColumnMode.innerHTML = '<i class="fas fa-columns"></i> وضع العمودين';
+    showNotification('تم تفعيل وضع الشبكة', 'info');
+  }
+  
+  renderTamamContent();
+}
+
+// حفظ صفحة التمام إلى PDF
+function saveTamamToPdf() {
+  const fileName = prompt('أدخل اسم ملف PDF:', `${tamamTitle.value || 'التمام'}_${new Date().toISOString().slice(0, 10)}`);
+  
+  if (!fileName) return;
+  
+  showProgress(true, 'جارٍ تجهيز ملف PDF...');
+  
+  setTimeout(() => {
+    const element = document.getElementById('tamamPagesContainer');
+    const opt = {
+      margin: 0,
+      filename: `${fileName}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 3 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    
+    html2pdf().set(opt).from(element).save().then(() => {
+      showProgress(false);
+      showNotification('تم حفظ ملف PDF بنجاح', 'success');
+    });
+  }, 100);
+}
+
+// حفظ صفحة التمام كصورة
+function saveTamamToImage() {
+  const fileName = prompt('أدخل اسم ملف الصورة:', `${tamamTitle.value || 'التمام'}_${new Date().toISOString().slice(0, 10)}`);
+  
+  if (!fileName) return;
+  
+  showProgress(true, 'جارٍ تجهيز الصورة...');
+  
+  setTimeout(() => {
+    const element = document.getElementById('tamamPagesContainer');
+    
+    html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff'
+    }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = `${fileName}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      
+      showProgress(false);
+      showNotification('تم حفظ الصورة بنجاح', 'success');
+    }).catch(error => {
+      console.error('Image export error:', error);
+      showProgress(false);
+      showNotification('حدث خطأ أثناء حفظ الصورة', 'error');
+    });
+  }, 100);
+}
+
+/* ---------- Table Name Management ---------- */
+
+// تهيئة نظام إدارة أسماء الجداول
+function initializeTableNameManagement() {
+  changeTableNameBtn.addEventListener('click', () => {
+    showTableNamePopup();
+  });
+  
+  confirmTableName.addEventListener('click', () => {
+    saveTableName();
+  });
+  
+  closeTableNamePopup.addEventListener('click', () => {
+    tableNamePopup.style.display = 'none';
+    tableNamePopup.setAttribute('aria-hidden', 'true');
+  });
+}
+
+// عرض نافذة إدخال اسم الجدول
+function showTableNamePopup() {
+  tableNamePopup.style.display = 'flex';
+  tableNamePopup.setAttribute('aria-hidden', 'false');
+  
+  // إنشاء قائمة بالجداول
+  const popupContent = tableNamePopup.querySelector('.popup-content');
+  popupContent.innerHTML = `
+    <p>اختر جدولاً وأدخل اسمه:</p>
+    <select id="tableSelector" style="width:100%; padding:10px; margin:10px 0; border-radius:6px; border:1px solid #ddd;">
+      ${filesData.map(fd => `<option value="${fd.id}">${escapeHtml(fd.name)}</option>`).join('')}
+    </select>
+    <input type="text" id="tableNameInput" placeholder="اسم الجدول" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+  `;
+  
+  // تعيين اسم الجدول الحالي إذا كان موجوداً
+  const tableSelector = document.getElementById('tableSelector');
+  tableSelector.addEventListener('change', () => {
+    const selectedId = tableSelector.value;
+    document.getElementById('tableNameInput').value = tableNames[selectedId] || '';
+  });
+  
+  // تعيين أول جدول كافتراضي
+  if (filesData.length > 0) {
+    document.getElementById('tableNameInput').value = tableNames[filesData[0].id] || '';
+  }
+}
+
+// حفظ اسم الجدول
+function saveTableName() {
+  const tableSelector = document.getElementById('tableSelector');
+  const tableNameInput = document.getElementById('tableNameInput');
+  
+  const fileId = tableSelector.value;
+  const tableName = tableNameInput.value.trim();
+  
+  if (!tableName) {
+    showNotification('يرجى إدخال اسم للجدول', 'warning');
+    return;
+  }
+  
+  tableNames[fileId] = tableName;
+  
+  tableNamePopup.style.display = 'none';
+  tableNamePopup.setAttribute('aria-hidden', 'true');
+  
+  // تحديث عرض النتيجة النهائية إذا كانت مفتوحة
+  if (resultPage.style.display === 'block') {
+    showFinalResults();
+  }
+  
+  showNotification('تم حفظ اسم الجدول بنجاح', 'success');
+}
+
+// إضافة الأحداث للأزرار الجديدة في الصفحة النهائية
+editTableBtn.addEventListener('click', enableTableEditing);
+
+// إضافة حدث لحفظ التطبيق
+saveAppBtn.addEventListener('click', () => {
+  saveCurrentProject();
+});
+
+// إضافة حدث لحفظ في المشروع الحالي (الزر الجديد)
+saveToProjectBtn.addEventListener('click', () => {
+  saveToCurrentProject();
+});
+
+/* ---------- Helpers (matching) ---------- */
+function normalizeText(s){ 
+  return String(s||'').toLowerCase().replace(/[^0-9a-z\u0600-\u06FF\s]/g,'').replace(/\s+/g,' ').trim(); 
+}
+
+function levenshtein(a,b){
+  a=String(a||''); b=String(b||''); const m=a.length,n=b.length;
+  if(m===0) return n; if(n===0) return m;
+  const dp=Array.from({length:m+1},()=>new Array(n+1).fill(0));
+  for(let i=0;i<=m;i++) dp[i][0]=i;
+  for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++){
+    const cost=a[i-1]===b[j-1]?0:1;
+    dp[i][j]=Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost);
+  }
+  return dp[m][n];
+}
+
+function levenshteinRatio(a,b){
+  a=String(a||''); b=String(b||''); const longer = a.length>=b.length? a: b;
+  if(longer.length===0) return 1; return (longer.length - levenshtein(a,b))/longer.length;
+}
+
+function tokenOverlap(a,b){
+  const A = normalizeText(a).split(' ').filter(Boolean);
+  const B = normalizeText(b).split(' ').filter(Boolean);
+  if(A.length===0 || B.length===0) return 0;
+  const setB = new Set(B); let common=0; A.forEach(tok=>{ if(setB.has(tok)) common++; });
+  return common / Math.max(A.length,B.length);
+}
+
+function substringScore(a,b){ 
+  a=normalizeText(a); b=normalizeText(b); 
+  if(!a||!b) return 0; 
+  if(a.includes(b)||b.includes(a)) return 1; 
+  return 0; 
+}
+
+function combinedScore(inp,hdr){
+  const n1=normalizeText(inp), n2=normalizeText(hdr);
+  const lev=levenshteinRatio(n1,n2), tok=tokenOverlap(n1,n2), sub=substringScore(n1,n2);
+  const score = Math.max(lev*0.5 + tok*0.35 + sub*0.15, 0);
+  return Math.min(1,score);
+}
+
+function similarityOfStrings(a,b){
+  a = String(a||''); b = String(b||'');
+  if(!a && !b) return 1;
+  if(!a || !b) return 0;
+  const na = normalizeText(a), nb = normalizeText(b);
+  const lev = levenshteinRatio(na,nb);
+  const tok = tokenOverlap(na,nb);
+  return Math.max(lev, tok);
+}
+
+/* ---------- Progress and Notification Functions ---------- */
+function showProgress(show, text = 'جارٍ المعالجة...') {
+  if (show) {
+    progressContainer.style.display = 'block';
+    progressText.textContent = text;
+  } else {
+    progressContainer.style.display = 'none';
+  }
+}
+
+function updateProgress(percent, text = 'جارٍ المعالجة...') {
+  progressBar.style.width = `${percent}%`;
+  if (text) {
+    progressText.textContent = text;
+  }
+}
+
+function showNotification(message, type = 'info') {
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.className = `status ${type}`;
+  notification.style.position = 'fixed';
+  notification.style.top = '20px';
+  notification.style.left = '50%';
+  notification.style.transform = 'translateX(-50%)';
+  notification.style.zIndex = '1001';
+  notification.style.minWidth = '300px';
+  notification.style.textAlign = 'center';
+  notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+  notification.style.borderRadius = '8px';
+  notification.style.padding = '12px 20px';
+  notification.style.animation = 'fadeIn 0.3s ease-out';
+  
+  // Add icon based on type
+  let icon = 'info-circle';
+  if (type === 'success') icon = 'check-circle';
+  if (type === 'warning') icon = 'exclamation-triangle';
+  if (type === 'error') icon = 'exclamation-circle';
+  
+  notification.innerHTML = `
+    <i class="fas fa-${icon}" style="margin-left: 8px;"></i>
+    ${message}
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Remove notification after 4 seconds
+  setTimeout(() => {
+    notification.style.animation = 'fadeOut 0.3s ease-in';
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 300);
+  }, 4000);
+}
+
+/* ---------- Utilities ---------- */
+function escapeHtml(s){ 
+  return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); 
+}
+
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', () => {
+  initializeEditFiles();
+  initializeProjectManagement();
+  initializeTamamPage();
+  initializeTableNameManagement();
+  initializeExcelExport();
+  initializeManualNumbering(); // NEW: تهيئة نظام الترقيم اليدوي
+  initializeDataAnalysis(); // NEW: تهيئة نظام تحليل البيانات
+  
+  showNotification('مرحبًا بك في نظام التمام المتكامل', 'info');
+});
+</script>
+</body>
+</html>
